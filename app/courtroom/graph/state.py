@@ -1,16 +1,18 @@
 from typing import TypedDict, List, NotRequired, Literal
 
 
-class Perspective(TypedDict):
+class PerspectiveState(TypedDict):
     id: int
     role: str
+    active: bool
+
     background: str
     motives: str
-    beliefs: List[str]
-    memory: List[str]
+    memory_summary: str
+    latest_round_summary: str
+
     public_statement: NotRequired[str]
     private_thoughts: NotRequired[str]
-    active: bool
 
 
 CourtAction = Literal[
@@ -26,12 +28,11 @@ CourtAction = Literal[
 class CourtroomState(TypedDict):
     user_input: str
     number_of_perspectives: NotRequired[int]
-    perspectives: NotRequired[List[Perspective]]
+    perspectives: NotRequired[List[PerspectiveState]]
 
     judiciary_corrupt: NotRequired[bool]
 
-    session_summary: NotRequired[str]
-    debate_history: NotRequired[List[str]]
+    latest_overall_round_summary: NotRequired[str]
     current_round: NotRequired[int]
 
     in_session_input: NotRequired[str]

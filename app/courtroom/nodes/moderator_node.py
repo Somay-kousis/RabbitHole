@@ -1,14 +1,15 @@
 from typing import List
+
 from pydantic import BaseModel, Field
+from langchain_core.prompts import ChatPromptTemplate
 
 from courtroom.graph.state import CourtroomState
 from models.llm import MODERATOR_MODEL
-from prompts.moderator import (
+from app.courtroom.prompts.moderator_prompt import (
     NUMBER_OF_PERSPECTIVES_PROMPT,
     ROLE_ASSIGNMENT_PROMPT,
-    JUDICIARY_TYPE_PROMPT
+    JUDICIARY_TYPE_PROMPT,
 )
-from langchain_core.prompts import ChatPromptTemplate
 
 
 class PerspectiveCount(BaseModel):
@@ -23,6 +24,7 @@ class RoleCard(BaseModel):
 
 class RoleAssignment(BaseModel):
     perspectives: List[RoleCard]
+
 
 class JudiciaryType(BaseModel):
     judiciary_corrupt: bool
@@ -47,6 +49,7 @@ role_assignment_chain = (
     | MODERATOR_MODEL.with_structured_output(RoleAssignment)
 )
 
+
 judiciary_type_prompt = ChatPromptTemplate.from_messages([
     ("system", JUDICIARY_TYPE_PROMPT)
 ])
@@ -56,12 +59,13 @@ judiciary_type_chain = (
     | MODERATOR_MODEL.with_structured_output(JudiciaryType)
 )
 
+
 def moderator_node(state: CourtroomState):
     """
     First setup pass:
     - decides number of AI perspectives
     - assigns only id, role, active
-    - does not create background/motives/beliefs
+    - initializes empty background, motives, memory, and round summary
 
     Later passes:
     - keeps existing courtroom setup
@@ -73,7 +77,7 @@ def moderator_node(state: CourtroomState):
 
     role_result = role_assignment_chain.invoke({
         "query": state["user_input"],
-        "number_of_perspectives": number_result.count
+        "number_of_perspectives": number_result.count,
     })
 
     judiciary_result = judiciary_type_chain.invoke({
@@ -86,13 +90,13 @@ def moderator_node(state: CourtroomState):
             {
                 "id": perspective.id,
                 "role": perspective.role,
+                "active": perspective.active,
                 "background": "",
                 "motives": "",
-                "beliefs": [],
-                "memory": [],
-                "active": perspective.active,
+                "memory_summary": "",
+                "latest_round_summary": "",
             }
             for perspective in role_result.perspectives
         ],
-        "judiciary_corrupt": judiciary_result.judiciary_corrupt
+        "judiciary_corrupt": judiciary_result.judiciary_corrupt,
     }
