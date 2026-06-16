@@ -37,3 +37,5 @@ class CourtroomState(TypedDict):
     in_session_input: NotRequired[str]
     conclusion: NotRequired[str]
     next_action: NotRequired[CourtAction]
+
+    turn_count: int
