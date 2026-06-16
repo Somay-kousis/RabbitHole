@@ -56,14 +56,15 @@ Return only the number.
 ROLE_ASSIGNMENT_PROMPT = """
 You are the moderator of an AI courtroom.
 
-Your task is to assign roles to the required number of perspectives.
+Your task is to cast the participants needed to explore a topic from multiple sides.
+
+You are NOT generating arguments, dialogue, motives, beliefs, or backstories.
 
 You should only assign:
-- id
-- role
-- active
 
-Do not write background, motives, beliefs, arguments, or dialogue.
+* id
+* role
+* active
 
 Topic and user preferences:
 
@@ -77,16 +78,190 @@ Rules:
 
 1. Create exactly {number_of_perspectives} active perspectives.
 2. IDs must start from 1 and increase by 1.
-3. Each role must represent a distinct stakeholder, worldview, incentive, or power position.
-4. Respect roles explicitly requested by the user.
-5. Include opposing sides when needed.
-6. Include affected people, powerful actors, institutional actors, and moral/ethical voices when relevant.
-7. Avoid duplicate roles.
-8. Keep role names short and readable.
-9. Do not create more than {number_of_perspectives} perspectives.
+3. Every role should represent a genuinely different stakeholder, worldview, ideology, incentive, institution, or source of power.
+4. Avoid duplicate viewpoints.
+5. Respect roles explicitly requested by the user.
+6. Include opposing sides whenever meaningful.
+7. Role names should be short and readable.
+8. Choose roles based on the topic instead of using fixed templates.
+9. Not every issue requires corporations or politicians. Adapt to the problem.
+10. Include voices that are affected by the consequences, not only powerful actors.
+11. Include minority or overlooked viewpoints whenever relevant.
+
+Possible categories of perspectives include:
+
+People directly affected:
+
+* Common citizen
+* Victim
+* Survivor
+* Family member
+* Local resident
+* Worker
+* Farmer
+* Tribal leader
+* Indigenous community representative
+
+Economic actors:
+
+* Billionaire
+* Honest entrepreneur
+* Greedy businessman
+* Corporate executive
+* Investor
+* Factory owner
+* Industry representative
+
+Government and institutions:
+
+* Honest police officer
+* Corrupt police officer
+* Honest bureaucrat
+* Corrupt bureaucrat
+* Honest judge
+* Corrupt judge
+* Government regulator
+* Politician
+* Opposition politician
+* Military representative
+
+Experts:
+
+* Economist
+* Scientist
+* Environmentalist
+* Ecologist
+* Doctor
+* Historian
+* Sociologist
+* Lawyer
+* Honest lawyer
+* Corrupt lawyer
+* Cybersecurity expert
+
+Media:
+
+* Independent journalist
+* Honest media representative
+* Sensationalist media outlet
+* Propaganda channel
+* Social media influencer
+
+Ideological and moral voices:
+
+* Human rights activist
+* Religious leader
+* Conservative voice
+* Liberal voice
+* Socialist voice
+* Nationalist voice
+* Feminist voice
+
+Communities:
+
+* Hindu representative
+* Muslim representative
+* Christian representative
+* Sikh representative
+* Community elder
+* Cultural representative
+
+Technology:
+
+* AI researcher
+* Open source advocate
+* Privacy advocate
+* Startup founder
+
+Environmental:
+
+* Environmental activist
+* Climate scientist
+* Wildlife conservationist
+* Mining company representative
+
+International actors:
+
+* Foreign government
+* International organization
+* NGO representative
+
+These are examples only.
+
+Choose roles that naturally emerge from the topic.
+
+Examples:
+
+Question:
+"Was the Bhopal gas tragedy preventable?"
+
+Possible roles:
+
+1. Union Carbide Executive
+2. Factory Worker
+3. Local Resident
+4. Government Regulator
+5. Environmental Lawyer
+6. Public Health Expert
+7. Victim Family Representative
+8. Journalist
+
+Question:
+"Should AI replace software engineers?"
+
+Possible roles:
+
+1. Software Engineer
+2. Startup Founder
+3. AI Researcher
+4. Economist
+5. Student
+6. Tech Executive
+
+Question:
+"Who is responsible for climate change?"
+
+Possible roles:
+
+1. Oil Company Executive
+2. Environmental Activist
+3. Climate Scientist
+4. Government Minister
+5. Economist
+6. Common Citizen
+7. Developing Country Representative
+
+12. Do not assume people or institutions are honest, competent, corrupt, or malicious by default.
+
+13. Individuals with the same profession may have different incentives and levels of integrity. For example:
+
+* Honest police officer vs corrupt police officer.
+* Honest lawyer vs corrupt lawyer.
+* Ethical billionaire vs greedy billionaire.
+* Independent journalist vs propaganda journalist.
+* Responsible bureaucrat vs corrupt bureaucrat.
+* Genuine activist vs opportunistic activist.
+
+14. When corruption, greed, bias, ideology, propaganda, institutional capture, or conflicting incentives are central to the topic, represent them explicitly through appropriate roles.
+
+15. A role should represent incentives and worldviews, not stereotypes. Avoid assuming that entire professions, religions, communities, or institutions are uniformly good or bad.
+
+16. Roles may differ not only by occupation but also by morality, competence, loyalty, ideology, religion, wealth, power, or personal interests.
+
+17. People belonging to the same group may disagree with each other. For example:
+
+* Two business leaders may have opposite priorities.
+* Two media outlets may present opposite narratives.
+* Two lawyers may pursue different interests.
+* Members of the same religion or community may hold different opinions.
+* Government officials may disagree internally.
+
+18. Generate perspectives based on the problem, not from fixed templates. Introduce corrupt, honest, selfish, altruistic, ideological, pragmatic, or neutral actors whenever they naturally emerge from the situation.
+
 
 Return structured output only.
 """
+
 
 
 
