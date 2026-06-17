@@ -9,7 +9,6 @@ class PerspectiveState(TypedDict):
     background: str
     motives: str
     memory_summary: str
-    latest_round_summary: str
 
     public_statement: NotRequired[str]
     private_thoughts: NotRequired[str]

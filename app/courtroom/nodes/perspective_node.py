@@ -6,7 +6,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from prompts.perspective_prompt import (
     PERSPECTIVE_BACKGROUND,
     PUBLIC_PRIVATE_STATEMENT,
-    ROUND_SUMMARY_PROMPT,
     MEMORY_GENERATION,
 )
 
@@ -25,10 +24,6 @@ class MemoryOutput(BaseModel):
     memory_summary: str
 
 
-class RoundOutput(BaseModel):
-    round_summary: str
-
-
 perspective_prompt = ChatPromptTemplate.from_messages([
     ("system", PERSPECTIVE_BACKGROUND)
 ])
@@ -40,11 +35,6 @@ statement_prompt = ChatPromptTemplate.from_messages([
 memory_generation_prompt = ChatPromptTemplate.from_messages([
     ("system", MEMORY_GENERATION)
 ])
-
-round_summary_prompt = ChatPromptTemplate.from_messages([
-    ("system", ROUND_SUMMARY_PROMPT)
-])
-
 
 perspective_chain = (
     perspective_prompt
@@ -59,11 +49,6 @@ statement_chain = (
 memory_chain = (
     memory_generation_prompt
     | PERSPECTIVE_MODEL.with_structured_output(MemoryOutput)
-)
-
-round_chain = (
-    round_summary_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(RoundOutput)
 )
 
 
@@ -122,18 +107,8 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         "memory_summary": memory_summary,
     })
 
-    round_result = round_chain.invoke({
-        "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
-        "memory_summary": memory_summary,
-        "private_thoughts": statement_result.private_thoughts,
-        "public_statement": statement_result.public_statement,
-    })
-
     memory_result = memory_chain.invoke({
         "existing_memory_summary": memory_summary,
-        "previous_round_summary": round_result.round_summary,
         "previous_public_statement": statement_result.public_statement,
         "previous_private_thoughts": statement_result.private_thoughts,
         "role": perspective["role"],
@@ -161,7 +136,6 @@ def perspective_node(state: CourtroomState, perspective_id: int):
                 "perspective_id": perspective["id"],
                 "role": perspective["role"],
                 "public_statement": statement_result.public_statement,
-                "round_summary": round_result.round_summary,
             }
         ],
     }
