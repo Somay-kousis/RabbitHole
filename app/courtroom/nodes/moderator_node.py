@@ -30,72 +30,61 @@ class JudiciaryType(BaseModel):
     judiciary_corrupt: bool
 
 
-perspective_count_prompt = ChatPromptTemplate.from_messages([
-    ("system", NUMBER_OF_PERSPECTIVES_PROMPT)
-])
+def build_chain(prompt: str, output_schema: type[BaseModel]):
+    return (
+        ChatPromptTemplate.from_messages([("system", prompt)])
+        | MODERATOR_MODEL.with_structured_output(output_schema)
+    )
 
-perspective_count_chain = (
-    perspective_count_prompt
-    | MODERATOR_MODEL.with_structured_output(PerspectiveCount)
+
+perspective_count_chain = build_chain(
+    NUMBER_OF_PERSPECTIVES_PROMPT,
+    PerspectiveCount,
+)
+
+role_assignment_chain = build_chain(
+    ROLE_ASSIGNMENT_PROMPT,
+    RoleAssignment,
+)
+
+judiciary_type_chain = build_chain(
+    JUDICIARY_TYPE_PROMPT,
+    JudiciaryType,
 )
 
 
-role_assignment_prompt = ChatPromptTemplate.from_messages([
-    ("system", ROLE_ASSIGNMENT_PROMPT)
-])
-
-role_assignment_chain = (
-    role_assignment_prompt
-    | MODERATOR_MODEL.with_structured_output(RoleAssignment)
-)
-
-
-judiciary_type_prompt = ChatPromptTemplate.from_messages([
-    ("system", JUDICIARY_TYPE_PROMPT)
-])
-
-judiciary_type_chain = (
-    judiciary_type_prompt
-    | MODERATOR_MODEL.with_structured_output(JudiciaryType)
-)
+def build_perspective(role_card: RoleCard):
+    return {
+        "id": role_card.id,
+        "role": role_card.role,
+        "active": role_card.active,
+        "background": "",
+        "motives": "",
+        "memory_summary": "",
+        "latest_round_summary": "",
+    }
 
 
 def moderator_node(state: CourtroomState):
-    """
-    First setup pass:
-    - decides number of AI perspectives
-    - assigns only id, role, active
-    - initializes empty background, motives, memory, and round summary
-
-    Later passes:
-    - keeps existing courtroom setup
-    """
+    query = state["user_input"]
 
     number_result = perspective_count_chain.invoke({
-        "query": state["user_input"]
+        "query": query
     })
 
     role_result = role_assignment_chain.invoke({
-        "query": state["user_input"],
+        "query": query,
         "number_of_perspectives": number_result.count,
     })
 
     judiciary_result = judiciary_type_chain.invoke({
-        "query": state["user_input"]
+        "query": query
     })
 
     return {
         "number_of_perspectives": number_result.count,
         "perspectives": [
-            {
-                "id": perspective.id,
-                "role": perspective.role,
-                "active": perspective.active,
-                "background": "",
-                "motives": "",
-                "memory_summary": "",
-                "latest_round_summary": "",
-            }
+            build_perspective(perspective)
             for perspective in role_result.perspectives
         ],
         "judiciary_corrupt": judiciary_result.judiciary_corrupt,
