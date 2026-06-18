@@ -24,33 +24,16 @@ class MemoryOutput(BaseModel):
     memory_summary: str
 
 
-perspective_prompt = ChatPromptTemplate.from_messages([
-    ("system", PERSPECTIVE_BACKGROUND)
-])
-
-statement_prompt = ChatPromptTemplate.from_messages([
-    ("system", PUBLIC_PRIVATE_STATEMENT)
-])
-
-memory_generation_prompt = ChatPromptTemplate.from_messages([
-    ("system", MEMORY_GENERATION)
-])
+def build_perspective_chain(prompt: str, output_schema: type[BaseModel]):
+    return (
+        ChatPromptTemplate.from_messages([("system", prompt)])
+        | PERSPECTIVE_MODEL.with_structured_output(output_schema)
+    )
 
 
-perspective_chain = (
-    perspective_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(PerspectiveOutput)
-)
-
-statement_chain = (
-    statement_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
-)
-
-memory_chain = (
-    memory_generation_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(MemoryOutput)
-)
+perspective_chain = build_perspective_chain(PERSPECTIVE_BACKGROUND, PerspectiveOutput)
+statement_chain = build_perspective_chain(PUBLIC_PRIVATE_STATEMENT, StatementOutput)
+memory_chain = build_perspective_chain(MEMORY_GENERATION, MemoryOutput)
 
 
 def get_perspective(state: CourtroomState, perspective_id: int):
