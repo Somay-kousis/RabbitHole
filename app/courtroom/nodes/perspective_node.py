@@ -55,6 +55,38 @@ def update_perspective(
         for perspective in state.get("perspectives", [])
     ]
 
+def upsert_user_perspective(state: CourtroomState, user_perspective: str):
+    existing_perspectives = state.get("perspectives", [])
+
+    p0 = {
+        "id": 0,
+        "role": "User Perspective",
+        "active": True,
+        "background": "The user has entered the courtroom to personally add their viewpoint.",
+        "motives": "Ensure their concern, correction, or objection is considered by the court but don't strictly move the decision in users favour he is a common person",
+        "memory_summary": "",
+        "public_statement": user_perspective,
+        "private_thoughts": "",
+    }
+
+    found_p0 = False
+    updated_perspectives = []
+
+    for perspective in existing_perspectives:
+        if perspective["id"] == 0:
+            updated_perspectives.append({
+                **perspective,
+                "public_statement": user_perspective,
+                "active": True,
+            })
+            found_p0 = True
+        else:
+            updated_perspectives.append(perspective)
+
+    if not found_p0:
+        updated_perspectives.insert(0, p0)
+
+    return updated_perspectives
 
 def perspective_node(state: CourtroomState, perspective_id: int):
     turn_count = state.get("turn_count", 0)
@@ -115,6 +147,8 @@ def perspective_node(state: CourtroomState, perspective_id: int):
             },
         )
     }
+
+
 
 
 def p1_node(state: CourtroomState):

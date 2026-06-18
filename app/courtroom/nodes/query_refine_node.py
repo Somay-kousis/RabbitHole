@@ -6,6 +6,7 @@ from prompts.query_refine_prompt import (
 )
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from nodes.perspective_node import upsert_user_perspective
 
 
 set_up_template = ChatPromptTemplate.from_messages([
@@ -44,12 +45,20 @@ def query_refine_node(state: CourtroomState):
             "turn_count": turn_count + 1
         }
 
-    else:
+    action = state.get("next_action")
+
+    if action == "continue debate with input":
         user_perspective = p0_chain.invoke({
             "user_input": state["in_session_input"]
         })
 
         return {
-            "in_session_input": user_perspective,
+            "in_session_input": "",
+            "next_action": "continue debate",
+            "perspectives": upsert_user_perspective(state, user_perspective),
             "turn_count": turn_count + 1
         }
+
+    return {
+        "turn_count": turn_count + 1
+    }

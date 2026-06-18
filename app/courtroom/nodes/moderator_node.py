@@ -61,15 +61,20 @@ def build_perspective(role_card: RoleCard):
         "background": "",
         "motives": "",
         "memory_summary": "",
-        "latest_round_summary": "",
     }
 
 
 def moderator_node(state: CourtroomState):
+    turn_count = state.get("turn_count", 0)
+
+    # Moderator should only create roles once, at the start.
+    if turn_count >= 1:
+        return {}
+
     query = state["user_input"]
 
     number_result = perspective_count_chain.invoke({
-        "query": query
+        "query": query,
     })
 
     role_result = role_assignment_chain.invoke({
@@ -78,7 +83,7 @@ def moderator_node(state: CourtroomState):
     })
 
     judiciary_result = judiciary_type_chain.invoke({
-        "query": query
+        "query": query,
     })
 
     return {
