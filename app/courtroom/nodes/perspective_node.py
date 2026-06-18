@@ -36,6 +36,7 @@ memory_generation_prompt = ChatPromptTemplate.from_messages([
     ("system", MEMORY_GENERATION)
 ])
 
+
 perspective_chain = (
     perspective_prompt
     | PERSPECTIVE_MODEL.with_structured_output(PerspectiveOutput)
@@ -71,30 +72,20 @@ def perspective_node(state: CourtroomState, perspective_id: int):
     if perspective.get("active") is not True:
         return {}
 
-    # setup phase: background + motives generated only once
+    background = perspective.get("background", "")
+    motives = perspective.get("motives", "")
+
+    # Turn 1: setup background + motives first.
+    # Turn 2 onward: reuse existing background + motives.
     if turn_count == 1:
         setup_result = perspective_chain.invoke({
             "id": perspective["id"],
             "role": perspective["role"],
         })
 
-        updated_perspectives = []
+        background = setup_result.background
+        motives = setup_result.motives
 
-        for p in state["perspectives"]:
-            if p["id"] == perspective_id:
-                updated_perspectives.append({
-                    **p,
-                    "background": setup_result.background,
-                    "motives": setup_result.motives,
-                })
-            else:
-                updated_perspectives.append(p)
-
-        return {
-            "perspectives": updated_perspectives
-        }
-
-    # debate phase
     memory_summary = "\n".join(perspective.get("memory", []))
 
     if not memory_summary:
@@ -102,8 +93,8 @@ def perspective_node(state: CourtroomState, perspective_id: int):
 
     statement_result = statement_chain.invoke({
         "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
+        "background": background,
+        "motives": motives,
         "memory_summary": memory_summary,
     })
 
@@ -112,8 +103,8 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         "previous_public_statement": statement_result.public_statement,
         "previous_private_thoughts": statement_result.private_thoughts,
         "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
+        "background": background,
+        "motives": motives,
     })
 
     updated_perspectives = []
@@ -122,6 +113,8 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         if p["id"] == perspective_id:
             updated_perspectives.append({
                 **p,
+                "background": background,
+                "motives": motives,
                 "private_thoughts": statement_result.private_thoughts,
                 "public_statement": statement_result.public_statement,
                 "memory": [memory_result.memory_summary],
