@@ -57,8 +57,20 @@ def get_perspective(state: CourtroomState, perspective_id: int):
     for perspective in state.get("perspectives", []):
         if perspective["id"] == perspective_id:
             return perspective
-
     return None
+
+
+def update_perspective(
+    state: CourtroomState,
+    perspective_id: int,
+    updates: dict,
+):
+    return [
+        {**perspective, **updates}
+        if perspective["id"] == perspective_id
+        else perspective
+        for perspective in state.get("perspectives", [])
+    ]
 
 
 def perspective_node(state: CourtroomState, perspective_id: int):
@@ -66,17 +78,13 @@ def perspective_node(state: CourtroomState, perspective_id: int):
 
     perspective = get_perspective(state, perspective_id)
 
-    if perspective is None:
-        return {}
-
-    if perspective.get("active") is not True:
+    if not perspective or perspective.get("active") is not True:
         return {}
 
     background = perspective.get("background", "")
     motives = perspective.get("motives", "")
+    existing_memory_summary = perspective.get("memory_summary", "")
 
-    # Turn 1: setup background + motives first.
-    # Turn 2 onward: reuse existing background + motives.
     if turn_count == 1:
         setup_result = perspective_chain.invoke({
             "id": perspective["id"],
@@ -86,51 +94,43 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         background = setup_result.background
         motives = setup_result.motives
 
-    memory_summary = "\n".join(perspective.get("memory", []))
+    if not existing_memory_summary:
+        existing_memory_summary = "No memory yet."
 
-    if not memory_summary:
-        memory_summary = "No memory yet."
+    latest_overall_round_summary = state.get(
+        "latest_overall_round_summary",
+        "No previous courtroom round summary yet."
+    )
 
     statement_result = statement_chain.invoke({
         "role": perspective["role"],
         "background": background,
         "motives": motives,
-        "memory_summary": memory_summary,
+        "memory_summary": existing_memory_summary,
+        "latest_overall_round_summary": latest_overall_round_summary,
     })
 
     memory_result = memory_chain.invoke({
-        "existing_memory_summary": memory_summary,
-        "previous_public_statement": statement_result.public_statement,
-        "previous_private_thoughts": statement_result.private_thoughts,
         "role": perspective["role"],
         "background": background,
         "motives": motives,
+        "existing_memory_summary": existing_memory_summary,
+        "latest_overall_round_summary": latest_overall_round_summary,
+        "latest_private_thoughts": statement_result.private_thoughts,
     })
 
-    updated_perspectives = []
-
-    for p in state["perspectives"]:
-        if p["id"] == perspective_id:
-            updated_perspectives.append({
-                **p,
+    return {
+        "perspectives": update_perspective(
+            state,
+            perspective_id,
+            {
                 "background": background,
                 "motives": motives,
                 "private_thoughts": statement_result.private_thoughts,
                 "public_statement": statement_result.public_statement,
-                "memory": [memory_result.memory_summary],
-            })
-        else:
-            updated_perspectives.append(p)
-
-    return {
-        "perspectives": updated_perspectives,
-        "debate_history": state.get("debate_history", []) + [
-            {
-                "perspective_id": perspective["id"],
-                "role": perspective["role"],
-                "public_statement": statement_result.public_statement,
-            }
-        ],
+                "memory_summary": memory_result.memory_summary,
+            },
+        )
     }
 
 

@@ -2,6 +2,7 @@ from typing import TypedDict, List, NotRequired, Literal
 
 
 class PerspectiveState(TypedDict):
+    
     id: int
     role: str
     active: bool
@@ -25,6 +26,7 @@ CourtAction = Literal[
 
 
 class CourtroomState(TypedDict):
+
     user_input: str
     number_of_perspectives: NotRequired[int]
     perspectives: NotRequired[List[PerspectiveState]]
@@ -39,3 +41,11 @@ class CourtroomState(TypedDict):
     next_action: NotRequired[CourtAction]
 
     turn_count: int
+
+class JudiciaryState(TypedDict):
+
+    type: str
+    memory_summary: str
+    reasoning: str
+    verdict: str
+    confidence: float    
