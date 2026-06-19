@@ -1,10 +1,8 @@
 from models.llm import CONCLUSION_MODEL
-from graph.state import JudiciaryState, CourtroomState, PerspectiveState
+from graph.state import CourtroomState
 from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
-from prompts.judiciary_prompt import CONCLUSION_PROMPT
-from langchain_core.output_parsers import StrOutputParser
-from models.llm import CONCLUSION_MODEL
+from prompts.conclusion_prompt import CONCLUSION_PROMPT
 
 class ConclusionOutput(BaseModel):
     conclusion: str

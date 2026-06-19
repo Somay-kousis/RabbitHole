@@ -65,10 +65,8 @@ def build_perspective(role_card: RoleCard):
 
 
 def moderator_node(state: CourtroomState):
-    turn_count = state.get("turn_count", 0)
-
-    # Moderator should only create roles once, at the start.
-    if turn_count >= 1:
+    # Moderator should only create roles once.
+    if state.get("perspectives"):
         return {}
 
     query = state["user_input"]

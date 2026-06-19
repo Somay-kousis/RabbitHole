@@ -1,4 +1,6 @@
-from typing import TypedDict, List, NotRequired, Literal
+from typing import Annotated, TypedDict, List, NotRequired, Literal
+
+from graph.reducers import merge_perspectives
 
 
 class PerspectiveState(TypedDict):
@@ -32,7 +34,7 @@ CourtAction = Literal[
 class CourtroomState(TypedDict):
     user_input: str
     number_of_perspectives: NotRequired[int]
-    perspectives: NotRequired[List[PerspectiveState]]
+    perspectives: NotRequired[Annotated[List[PerspectiveState], merge_perspectives]]
 
     judiciary_corrupt: NotRequired[bool]
     judiciary: NotRequired[JudiciaryState]

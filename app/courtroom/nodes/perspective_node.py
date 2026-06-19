@@ -43,18 +43,6 @@ def get_perspective(state: CourtroomState, perspective_id: int):
     return None
 
 
-def update_perspective(
-    state: CourtroomState,
-    perspective_id: int,
-    updates: dict,
-):
-    return [
-        {**perspective, **updates}
-        if perspective["id"] == perspective_id
-        else perspective
-        for perspective in state.get("perspectives", [])
-    ]
-
 def upsert_user_perspective(state: CourtroomState, user_perspective: str):
     existing_perspectives = state.get("perspectives", [])
 
@@ -135,20 +123,23 @@ def perspective_node(state: CourtroomState, perspective_id: int):
     })
 
     return {
-        "perspectives": update_perspective(
-            state,
-            perspective_id,
+        "perspectives": [
             {
+                **perspective,
                 "background": background,
                 "motives": motives,
                 "private_thoughts": statement_result.private_thoughts,
                 "public_statement": statement_result.public_statement,
                 "memory_summary": memory_result.memory_summary,
             },
-        )
+        ]
     }
 
 
+
+
+def p0_node(state: CourtroomState):
+    return perspective_node(state, 0)
 
 
 def p1_node(state: CourtroomState):
