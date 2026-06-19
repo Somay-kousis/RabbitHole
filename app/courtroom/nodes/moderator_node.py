@@ -3,9 +3,9 @@ from typing import List
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 
-from graph.state import CourtroomState
-from models.llm import MODERATOR_MODEL
-from prompts.moderator_prompt import (
+from app.courtroom.graph.state import CourtroomState
+from app.courtroom.models.llm import MODERATOR_MODEL
+from app.courtroom.prompts.moderator_prompt import (
     NUMBER_OF_PERSPECTIVES_PROMPT,
     ROLE_ASSIGNMENT_PROMPT,
     JUDICIARY_TYPE_PROMPT,

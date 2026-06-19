@@ -1,4 +1,4 @@
-from graph.state import CourtroomState
+from app.courtroom.graph.state import CourtroomState
 
 def hitl_node(state: CourtroomState):
     if state.get("next_action") == "continue debate":

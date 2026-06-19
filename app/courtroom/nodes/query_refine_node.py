@@ -1,12 +1,12 @@
-from graph.state import CourtroomState
-from models.llm import QUERYREFINE_MODEL
-from prompts.query_refine_prompt import (
+from app.courtroom.graph.state import CourtroomState
+from app.courtroom.models.llm import QUERYREFINE_MODEL
+from app.courtroom.prompts.query_refine_prompt import (
     USER_INPUT_REFINER_PROMPT,
     USER_PERSPECTIVE_PROMPT,
 )
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from nodes.perspective_node import upsert_user_perspective
+from app.courtroom.nodes.perspective_node import upsert_user_perspective
 
 
 set_up_template = ChatPromptTemplate.from_messages([

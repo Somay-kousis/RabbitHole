@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
-from graph.state import CourtroomState
-from models.llm import PERSPECTIVE_MODEL
+from app.courtroom.graph.state import CourtroomState
+from app.courtroom.models.llm import PERSPECTIVE_MODEL
 from langchain_core.prompts import ChatPromptTemplate
-from prompts.perspective_prompt import (
+from app.courtroom.prompts.perspective_prompt import (
     PERSPECTIVE_BACKGROUND,
     PUBLIC_PRIVATE_STATEMENT,
     MEMORY_GENERATION,
