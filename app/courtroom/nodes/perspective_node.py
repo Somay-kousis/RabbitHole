@@ -6,7 +6,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from prompts.perspective_prompt import (
     PERSPECTIVE_BACKGROUND,
     PUBLIC_PRIVATE_STATEMENT,
-    ROUND_SUMMARY_PROMPT,
     MEMORY_GENERATION,
 )
 
@@ -25,146 +24,122 @@ class MemoryOutput(BaseModel):
     memory_summary: str
 
 
-class RoundOutput(BaseModel):
-    round_summary: str
+def build_perspective_chain(prompt: str, output_schema: type[BaseModel]):
+    return (
+        ChatPromptTemplate.from_messages([("system", prompt)])
+        | PERSPECTIVE_MODEL.with_structured_output(output_schema)
+    )
 
 
-perspective_prompt = ChatPromptTemplate.from_messages([
-    ("system", PERSPECTIVE_BACKGROUND)
-])
-
-statement_prompt = ChatPromptTemplate.from_messages([
-    ("system", PUBLIC_PRIVATE_STATEMENT)
-])
-
-memory_generation_prompt = ChatPromptTemplate.from_messages([
-    ("system", MEMORY_GENERATION)
-])
-
-round_summary_prompt = ChatPromptTemplate.from_messages([
-    ("system", ROUND_SUMMARY_PROMPT)
-])
-
-
-perspective_chain = (
-    perspective_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(PerspectiveOutput)
-)
-
-statement_chain = (
-    statement_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
-)
-
-memory_chain = (
-    memory_generation_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(MemoryOutput)
-)
-
-round_chain = (
-    round_summary_prompt
-    | PERSPECTIVE_MODEL.with_structured_output(RoundOutput)
-)
+perspective_chain = build_perspective_chain(PERSPECTIVE_BACKGROUND, PerspectiveOutput)
+statement_chain = build_perspective_chain(PUBLIC_PRIVATE_STATEMENT, StatementOutput)
+memory_chain = build_perspective_chain(MEMORY_GENERATION, MemoryOutput)
 
 
 def get_perspective(state: CourtroomState, perspective_id: int):
     for perspective in state.get("perspectives", []):
         if perspective["id"] == perspective_id:
             return perspective
-
     return None
 
+
+def upsert_user_perspective(state: CourtroomState, user_perspective: str):
+    existing_perspectives = state.get("perspectives", [])
+
+    p0 = {
+        "id": 0,
+        "role": "User Perspective",
+        "active": True,
+        "background": "The user has entered the courtroom to personally add their viewpoint.",
+        "motives": "Ensure their concern, correction, or objection is considered by the court but don't strictly move the decision in users favour he is a common person",
+        "memory_summary": "",
+        "public_statement": user_perspective,
+        "private_thoughts": "",
+    }
+
+    found_p0 = False
+    updated_perspectives = []
+
+    for perspective in existing_perspectives:
+        if perspective["id"] == 0:
+            updated_perspectives.append({
+                **perspective,
+                "public_statement": user_perspective,
+                "active": True,
+            })
+            found_p0 = True
+        else:
+            updated_perspectives.append(perspective)
+
+    if not found_p0:
+        updated_perspectives.insert(0, p0)
+
+    return updated_perspectives
 
 def perspective_node(state: CourtroomState, perspective_id: int):
     turn_count = state.get("turn_count", 0)
 
     perspective = get_perspective(state, perspective_id)
 
-    if perspective is None:
+    if not perspective or perspective.get("active") is not True:
         return {}
 
-    if perspective.get("active") is not True:
-        return {}
+    background = perspective.get("background", "")
+    motives = perspective.get("motives", "")
+    existing_memory_summary = perspective.get("memory_summary", "")
 
-    # setup phase: background + motives generated only once
     if turn_count == 1:
         setup_result = perspective_chain.invoke({
             "id": perspective["id"],
             "role": perspective["role"],
         })
 
-        updated_perspectives = []
+        background = setup_result.background
+        motives = setup_result.motives
 
-        for p in state["perspectives"]:
-            if p["id"] == perspective_id:
-                updated_perspectives.append({
-                    **p,
-                    "background": setup_result.background,
-                    "motives": setup_result.motives,
-                })
-            else:
-                updated_perspectives.append(p)
+    if not existing_memory_summary:
+        existing_memory_summary = "No memory yet."
 
-        return {
-            "perspectives": updated_perspectives
-        }
-
-    # debate phase
-    memory_summary = "\n".join(perspective.get("memory", []))
-
-    if not memory_summary:
-        memory_summary = "No memory yet."
+    latest_overall_round_summary = state.get(
+        "latest_overall_round_summary",
+        "No previous courtroom round summary yet."
+    )
 
     statement_result = statement_chain.invoke({
         "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
-        "memory_summary": memory_summary,
-    })
-
-    round_result = round_chain.invoke({
-        "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
-        "memory_summary": memory_summary,
-        "private_thoughts": statement_result.private_thoughts,
-        "public_statement": statement_result.public_statement,
+        "background": background,
+        "motives": motives,
+        "memory_summary": existing_memory_summary,
+        "latest_overall_round_summary": latest_overall_round_summary,
     })
 
     memory_result = memory_chain.invoke({
-        "existing_memory_summary": memory_summary,
-        "previous_round_summary": round_result.round_summary,
-        "previous_public_statement": statement_result.public_statement,
-        "previous_private_thoughts": statement_result.private_thoughts,
         "role": perspective["role"],
-        "background": perspective["background"],
-        "motives": perspective["motives"],
+        "background": background,
+        "motives": motives,
+        "existing_memory_summary": existing_memory_summary,
+        "latest_overall_round_summary": latest_overall_round_summary,
+        "latest_private_thoughts": statement_result.private_thoughts,
     })
 
-    updated_perspectives = []
-
-    for p in state["perspectives"]:
-        if p["id"] == perspective_id:
-            updated_perspectives.append({
-                **p,
+    return {
+        "perspectives": [
+            {
+                **perspective,
+                "background": background,
+                "motives": motives,
                 "private_thoughts": statement_result.private_thoughts,
                 "public_statement": statement_result.public_statement,
-                "memory": [memory_result.memory_summary],
-            })
-        else:
-            updated_perspectives.append(p)
-
-    return {
-        "perspectives": updated_perspectives,
-        "debate_history": state.get("debate_history", []) + [
-            {
-                "perspective_id": perspective["id"],
-                "role": perspective["role"],
-                "public_statement": statement_result.public_statement,
-                "round_summary": round_result.round_summary,
-            }
-        ],
+                "memory_summary": memory_result.memory_summary,
+            },
+        ]
     }
+
+
+
+
+def p0_node(state: CourtroomState):
+    return perspective_node(state, 0)
 
 
 def p1_node(state: CourtroomState):

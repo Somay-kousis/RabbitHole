@@ -25,3 +25,8 @@ QUERYREFINE_MODEL = ChatOllama(
     model="gemma4",
     temperature=1
 )
+
+CONCLUSION_MODEL = ChatOllama(
+    model="qwen3.6",
+    temperature=0.7
+)

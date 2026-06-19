@@ -1,30 +1,16 @@
-from langgraph.graph import END
-from state import CourtroomState
+from graph.state import CourtroomState
 
 
-def action_one_route(state: CourtroomState):
-    action = state.get("next_action")
+def route_after_hitl(state: CourtroomState):
+    action = state.get("next_action", "generate conclusion")
 
-    if action in ("continue debate", "continue debate with input"):
+    if action == "continue debate":
         return "moderator_node"
+
+    if action == "continue debate with input":
+        return "query_refine_node"
 
     if action == "generate conclusion":
         return "conclusion_node"
 
-    raise ValueError(f"Unknown action after debate: {action}")
-
-
-def action_two_route(state: CourtroomState):
-    action = state.get("next_action")
-
-    if action == "satisfied":
-        return END
-
-    if action == "have questions":
-        return "general_node"
-
-    if action == "continue from where we left":
-        return "moderator_node"
-
-    raise ValueError(f"Unknown action after conclusion: {action}")
-
+    raise ValueError(f"Invalid next_action: {action}")

@@ -1,4 +1,6 @@
-from typing import TypedDict, List, NotRequired, Literal
+from typing import Annotated, TypedDict, List, NotRequired, Literal
+
+from graph.reducers import merge_perspectives
 
 
 class PerspectiveState(TypedDict):
@@ -9,28 +11,33 @@ class PerspectiveState(TypedDict):
     background: str
     motives: str
     memory_summary: str
-    latest_round_summary: str
 
     public_statement: NotRequired[str]
     private_thoughts: NotRequired[str]
+
+
+class JudiciaryState(TypedDict):
+    type: str
+    memory_summary: NotRequired[str]
+    reasoning: NotRequired[str]
+    verdict: NotRequired[str]
+    confidence: NotRequired[float]
 
 
 CourtAction = Literal[
     "continue debate",
     "continue debate with input",
     "generate conclusion",
-    "satisfied",
-    "have questions",
-    "continue from where we left"
 ]
 
 
 class CourtroomState(TypedDict):
     user_input: str
     number_of_perspectives: NotRequired[int]
-    perspectives: NotRequired[List[PerspectiveState]]
+    perspectives: NotRequired[Annotated[List[PerspectiveState], merge_perspectives]]
 
     judiciary_corrupt: NotRequired[bool]
+    judiciary: NotRequired[JudiciaryState]
 
     latest_overall_round_summary: NotRequired[str]
     current_round: NotRequired[int]
