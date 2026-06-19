@@ -1,8 +1,8 @@
-from models.llm import JUDICIARY_MODEL
-from graph.state import JudiciaryState, CourtroomState
+from app.courtroom.models.llm import JUDICIARY_MODEL
+from app.courtroom.graph.state import JudiciaryState, CourtroomState
 from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
-from prompts.judiciary_prompt import (
+from app.courtroom.prompts.judiciary_prompt import (
     JUDICIARY_TYPE_PROMPT,
     MEMORY_SUMMARY_PROMPT,
     REASON_VERDICT_PROMPT,

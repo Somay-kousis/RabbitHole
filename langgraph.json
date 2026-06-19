@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "courtroom": "./app/courtroom/graph/builder.py:courtroom_app"
+  },
+  "env": ".env"
+}

@@ -1,4 +1,4 @@
-from graph.state import CourtroomState
+from app.courtroom.graph.state import CourtroomState
 
 
 def route_after_hitl(state: CourtroomState):

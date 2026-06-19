@@ -1,12 +1,13 @@
 from langgraph.graph import END, START, StateGraph
 
-from graph.route import route_after_hitl
-from graph.state import CourtroomState
-from nodes.conclusion_node import conclusion_node
-from nodes.hitl_node import hitl_node
-from nodes.judiciary_node import judiciary_node
-from nodes.moderator_node import moderator_node
-from nodes.perspective_node import (
+from app.courtroom.graph.route import route_after_hitl
+from app.courtroom.graph.state import CourtroomState
+
+from app.courtroom.nodes.conclusion_node import conclusion_node
+from app.courtroom.nodes.hitl_node import hitl_node
+from app.courtroom.nodes.judiciary_node import judiciary_node
+from app.courtroom.nodes.moderator_node import moderator_node
+from app.courtroom.nodes.perspective_node import (
     p0_node,
     p1_node,
     p2_node,
@@ -19,8 +20,9 @@ from nodes.perspective_node import (
     p9_node,
     p10_node,
 )
-from nodes.query_refine_node import query_refine_node
-
+from app.courtroom.nodes.query_refine_node import query_refine_node
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=".env", override=True)
 
 PERSPECTIVE_NODE_NAMES = [
     "p0_node",

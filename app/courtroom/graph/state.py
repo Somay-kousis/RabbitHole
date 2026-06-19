@@ -1,6 +1,6 @@
 from typing import Annotated, TypedDict, List, NotRequired, Literal
 
-from graph.reducers import merge_perspectives
+from app.courtroom.graph.reducers import merge_perspectives
 
 
 class PerspectiveState(TypedDict):
