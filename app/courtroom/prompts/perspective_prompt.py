@@ -44,10 +44,10 @@ Guidelines:
 
 Return only:
 
-{
+{{
 "background": "...",
 "motives": "..."
-}
+}}
 
 """
 
@@ -148,10 +148,10 @@ It should sound like something said in a courtroom discussion, not a long essay.
 
 Return only:
 
-{
+{{
   "private_thoughts": "...",
   "public_statement": "..."
-}
+}}
 """
 
 MEMORY_GENERATION = """
@@ -236,7 +236,7 @@ Rules:
 
 Return only:
 
-{
+{{
   "memory_summary": "..."
-}
+}}
 """

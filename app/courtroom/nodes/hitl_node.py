@@ -1,9 +1,14 @@
 from app.courtroom.graph.state import CourtroomState
 
+
 def hitl_node(state: CourtroomState):
-    if state.get("next_action") == "continue debate":
-        return {
-            "turn_count": state.get("turn_count", 0) + 1,
-        }
+    action = state.get("next_action")
+
+    if action not in {
+        "continue debate",
+        "continue debate with input",
+        "generate conclusion",
+    }:
+        raise ValueError(f"Invalid next_action: {action}")
 
     return {}

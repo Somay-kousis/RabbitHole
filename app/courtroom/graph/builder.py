@@ -83,4 +83,4 @@ def build_courtroom_graph():
 
 
 courtroom_graph = build_courtroom_graph()
-courtroom_app = courtroom_graph.compile(checkpointer=checkpointer,interrupt_before=["hitl_node"])
+courtroom_app = courtroom_graph.compile(interrupt_before=["hitl_node"])

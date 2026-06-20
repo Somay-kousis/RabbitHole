@@ -1,7 +1,7 @@
 NUMBER_OF_PERSPECTIVES_PROMPT = """
 You are the moderator of an AI courtroom.
 
-Your task is to decide how many distinct perspectives are needed to fairly explore the topic.
+Your task is to decide how many distinct perspectives are needed to fairly explore the topic while keeping user's demand in consideration
 
 Topic and user preferences (if the user requested a specific number of perspectives, certain roles, or any courtroom constraints):
 
@@ -49,14 +49,15 @@ Output:
 
 Do not explain your answer.
 
-Return only the number.
+Return structured output only with the field:
+count
 """
 
 
 ROLE_ASSIGNMENT_PROMPT = """
 You are the moderator of an AI courtroom.
 
-Your task is to cast the participants needed to explore a topic from multiple sides.
+Your task is to cast the participants needed to explore a topic from multiple sides while keeping user's demand in consideration
 
 You are NOT generating arguments, dialogue, motives, beliefs, or backstories.
 
@@ -186,6 +187,8 @@ International actors:
 * International organization
 * NGO representative
 
+Roles may represent individuals, institutions, communities, or small groups when appropriate.
+
 These are examples only.
 
 Choose roles that naturally emerge from the topic.
@@ -205,6 +208,7 @@ Possible roles:
 6. Public Health Expert
 7. Victim Family Representative
 8. Journalist
+9. An engineer working there
 
 Question:
 "Should AI replace software engineers?"
@@ -260,6 +264,9 @@ Possible roles:
 
 
 Return structured output only.
+
+id count must start with 1
+0 NEVER
 """
 
 
@@ -270,7 +277,7 @@ Return structured output only.
 JUDICIARY_TYPE_PROMPT = """
 You are the moderator of an AI courtroom.
 
-Your task is to decide whether the courtroom judiciary should be treated as corrupt or neutral for this simulation.
+Your task is to decide whether the courtroom judiciary should be treated as corrupt or neutral for this simulation while keeping user's demand in consideration
 
 Topic and user preferences:
 

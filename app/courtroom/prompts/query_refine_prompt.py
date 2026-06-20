@@ -24,7 +24,11 @@ User:
 Output:
 "Investigate the Bhopal Gas Tragedy and analyze the role and responsibility of Union Carbide, including industrial practices, regulatory oversight, safety failures, legal proceedings, and arguments made by both supporters and critics. Examine historical events, expert opinions, and long-term consequences while considering alternative perspectives and uncertainties."
 
+if the user has some specific demand then make sure you follow that like keep only 2 perspectives or must keep a curropt politican etc 
+
 Only return the refined request.
+
+
 """
 
 

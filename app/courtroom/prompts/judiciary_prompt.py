@@ -1,6 +1,3 @@
-from app.courtroom.graph.state import CourtroomState
-
-
 JUDICIARY_TYPE_PROMPT = """
 You are the judiciary designer for a courtroom-style multi-agent debate system.
 
@@ -58,11 +55,11 @@ User case:
 Judiciary corrupt:
 {judiciary_corrupt}
 
-Output format:
-Judiciary Type:
-Judiciary Nature:
-Likely Biases:
-Decision Style:
+Return structured output only with this field:
+
+{
+  "type": "A concise judiciary profile describing the judge's nature, likely biases, and decision style."
+}
 """
 
 
@@ -167,13 +164,15 @@ You are given:
 - judiciary_type
 - memory_summary
 - latest_overall_round_summary
+- public_statements
 - user_input
 - judiciary_corrupt
 
 Important context:
 
 - memory_summary contains the judiciary's understanding of previous rounds.
-- latest_overall_round_summary contains what happened in the current round, including public statements from all perspectives.
+- latest_overall_round_summary contains the previous public courtroom round, if one exists.
+- public_statements contains the current round's statements from all active perspectives.
 - The verdict is not necessarily final unless the user asks to generate a conclusion.
 - If judiciary_corrupt is true, your reasoning may be biased, strategic, protective of power, or influenced by hidden incentives.
 - If judiciary_corrupt is false, reason as fairly and carefully as possible.

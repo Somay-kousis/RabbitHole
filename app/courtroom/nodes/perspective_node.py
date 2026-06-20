@@ -84,56 +84,70 @@ def perspective_node(state: CourtroomState, perspective_id: int):
     if not perspective or perspective.get("active") is not True:
         return {}
 
-    background = perspective.get("background", "")
-    motives = perspective.get("motives", "")
-    existing_memory_summary = perspective.get("memory_summary", "")
-
     if turn_count == 1:
         setup_result = perspective_chain.invoke({
             "id": perspective["id"],
             "role": perspective["role"],
         })
 
-        background = setup_result.background
-        motives = setup_result.motives
+        statement_result = statement_chain.invoke({
+            "role": perspective["role"],
+            "background": setup_result.background,
+            "motives": setup_result.motives,
+            "memory_summary": "No memory yet.",
+            "latest_overall_round_summary": "No previous courtroom round summary yet.",
+        })
 
-    if not existing_memory_summary:
-        existing_memory_summary = "No memory yet."
+        return {
+            "perspectives": [
+                {
+                    **perspective,
+                    "background": setup_result.background,
+                    "motives": setup_result.motives,
+                    "private_thoughts": statement_result.private_thoughts,
+                    "public_statement": statement_result.public_statement,
+                },
+            ]
+        }
 
-    latest_overall_round_summary = state.get(
-        "latest_overall_round_summary",
-        "No previous courtroom round summary yet."
-    )
+    if turn_count > 1:
+        background = perspective.get("background", "")
+        motives = perspective.get("motives", "")
+        existing_memory_summary = perspective.get("memory_summary") or "No memory yet."
+        latest_overall_round_summary = state.get(
+            "latest_overall_round_summary",
+            "No previous courtroom round summary yet."
+        )
 
-    statement_result = statement_chain.invoke({
-        "role": perspective["role"],
-        "background": background,
-        "motives": motives,
-        "memory_summary": existing_memory_summary,
-        "latest_overall_round_summary": latest_overall_round_summary,
-    })
+        statement_result = statement_chain.invoke({
+            "role": perspective["role"],
+            "background": background,
+            "motives": motives,
+            "memory_summary": existing_memory_summary,
+            "latest_overall_round_summary": latest_overall_round_summary,
+        })
 
-    memory_result = memory_chain.invoke({
-        "role": perspective["role"],
-        "background": background,
-        "motives": motives,
-        "existing_memory_summary": existing_memory_summary,
-        "latest_overall_round_summary": latest_overall_round_summary,
-        "latest_private_thoughts": statement_result.private_thoughts,
-    })
+        memory_result = memory_chain.invoke({
+            "role": perspective["role"],
+            "background": background,
+            "motives": motives,
+            "existing_memory_summary": existing_memory_summary,
+            "latest_overall_round_summary": latest_overall_round_summary,
+            "latest_private_thoughts": statement_result.private_thoughts,
+        })
 
-    return {
-        "perspectives": [
-            {
-                **perspective,
-                "background": background,
-                "motives": motives,
-                "private_thoughts": statement_result.private_thoughts,
-                "public_statement": statement_result.public_statement,
-                "memory_summary": memory_result.memory_summary,
-            },
-        ]
-    }
+        return {
+            "perspectives": [
+                {
+                    **perspective,
+                    "private_thoughts": statement_result.private_thoughts,
+                    "public_statement": statement_result.public_statement,
+                    "memory_summary": memory_result.memory_summary,
+                },
+            ]
+        }
+
+    return {}
 
 
 
