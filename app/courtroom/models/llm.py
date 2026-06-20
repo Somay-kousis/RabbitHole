@@ -1,31 +1,34 @@
-from langchain_ollama import ChatOllama
+from dotenv import load_dotenv
+load_dotenv()
 
-MODERATOR_MODEL = ChatOllama(
-    model="mistral",
+from langchain_groq import ChatGroq
+
+MODERATOR_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=1
 )
 
-PERSPECTIVE_MODEL = ChatOllama(
-    model="mistral",
+PERSPECTIVE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=1
 )
 
-SESSION_MODEL = ChatOllama(
-    model="mistral",
+SESSION_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=1
 )
 
-JUDICIARY_MODEL = ChatOllama(
-    model="phi4-mini",
-    temperature=0.3
+JUDICIARY_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=1
 )
 
-QUERYREFINE_MODEL = ChatOllama(
-    model="phi4-mini",
-    temperature=0
+QUERYREFINE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=1
 )
 
-CONCLUSION_MODEL = ChatOllama(
-    model="mistral",
+CONCLUSION_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=0.7
 )
