@@ -22,7 +22,8 @@ set_up_chain = (
 
 
 p0_template = ChatPromptTemplate.from_messages([
-    ("system", USER_PERSPECTIVE_PROMPT)
+    ("system", USER_PERSPECTIVE_PROMPT),
+    ("human", "User Input: {user_input}")
 ])
 
 p0_chain = (

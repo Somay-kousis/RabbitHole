@@ -8,7 +8,7 @@ Rules:
 1. Preserve the user's original meaning and tone.
 2. Expand vague requests into specific investigation objectives.
 3. Include entities, people, organizations, events, locations, dates, claims, and concerns mentioned by the user.
-4. If information is missing, make reasonable assumptions only when necessary and mark them as implicit context.
+4. If information is missing, do not invent details. Preserve missing context as explicit open questions or investigation gaps.
 5. Never inject opinions or conclusions.
 6. Never decide who is right or wrong.
 7. Do not remove ambiguity; preserve it.
@@ -48,10 +48,6 @@ Rules:
 6. Your goal is to ensure that the user's voice is heard alongside all other participants.
 7. You may disagree with every other participant if necessary.
 8. Maintain consistency with the user's previous interventions unless the user explicitly changes their position.
-
-Current user statement:
-
-{user_input}
 
 Generate:
 

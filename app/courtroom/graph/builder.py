@@ -21,9 +21,12 @@ from app.courtroom.nodes.perspective_node import (
     p10_node,
 )
 from app.courtroom.nodes.query_refine_node import query_refine_node
+
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env", override=True)
+
 from langgraph.checkpoint.memory import MemorySaver
+checkpointer = MemorySaver()
 
 PERSPECTIVE_NODE_NAMES = [
     "p0_node",
@@ -80,4 +83,4 @@ def build_courtroom_graph():
 
 
 courtroom_graph = build_courtroom_graph()
-courtroom_app = courtroom_graph.compile(interrupt_before=["hitl_node"])
+courtroom_app = courtroom_graph.compile(checkpointer=checkpointer,interrupt_before=["hitl_node"])
