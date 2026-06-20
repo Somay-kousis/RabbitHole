@@ -17,7 +17,6 @@ class PerspectiveCount(BaseModel):
 
 
 class RoleCard(BaseModel):
-    id: int
     role: str
     active: bool
 
@@ -53,9 +52,9 @@ judiciary_type_chain = build_chain(
 )
 
 
-def build_perspective(role_card: RoleCard):
+def build_perspective(perspective_id: int, role_card: RoleCard):
     return {
-        "id": role_card.id,
+        "id": perspective_id,
         "role": role_card.role,
         "active": role_card.active,
         "background": "",
@@ -87,8 +86,8 @@ def moderator_node(state: CourtroomState):
     return {
         "number_of_perspectives": number_result.count,
         "perspectives": [
-            build_perspective(perspective)
-            for perspective in role_result.perspectives
+            build_perspective(index, perspective)
+            for index, perspective in enumerate(role_result.perspectives, start=1)
         ],
         "judiciary_corrupt": judiciary_result.judiciary_corrupt,
     }

@@ -12,7 +12,7 @@ Rules:
 1. Use as few perspectives as possible while ensuring important viewpoints are represented.
 2. Typical range is between 3 and 10 perspectives.
 3. Increase the number only when the issue involves many stakeholders, conflicting interests, or ethical trade-offs.
-4. Respect explicit user requests for a specific number whenever reasonable.
+4. If the user explicitly requests a number between 3 and 10, return that number exactly.
 5. Respect explicit requests for certain roles or groups.
 6. Ensure the number is large enough to include requested roles.
 7. Avoid creating unnecessary or duplicate viewpoints.
@@ -63,7 +63,6 @@ You are NOT generating arguments, dialogue, motives, beliefs, or backstories.
 
 You should only assign:
 
-* id
 * role
 * active
 
@@ -78,16 +77,19 @@ Number of perspectives required:
 Rules:
 
 1. Create exactly {number_of_perspectives} active perspectives.
-2. IDs must start from 1 and increase by 1.
-3. Every role should represent a genuinely different stakeholder, worldview, ideology, incentive, institution, or source of power.
-4. Avoid duplicate viewpoints.
-5. Respect roles explicitly requested by the user.
-6. Include opposing sides whenever meaningful.
-7. Role names should be short and readable.
-8. Choose roles based on the topic instead of using fixed templates.
-9. Not every issue requires corporations or politicians. Adapt to the problem.
-10. Include voices that are affected by the consequences, not only powerful actors.
-11. Include minority or overlooked viewpoints whenever relevant.
+2. Do not assign ids. The system will assign ids automatically.
+3. User-requested roles, groups, or courtroom constraints are mandatory unless they are duplicates or impossible to include.
+4. Do not replace explicitly requested roles with generic alternatives.
+5. Include all requested roles first, then fill remaining slots with balancing perspectives.
+6. If the user requests more roles than {number_of_perspectives}, prioritize the requested roles that are most central to the topic.
+7. Every role should represent a genuinely different stakeholder, worldview, ideology, incentive, institution, or source of power.
+8. Avoid duplicate viewpoints.
+9. Include opposing sides whenever meaningful.
+10. Role names should be short and readable.
+11. Choose roles based on the topic instead of using fixed templates.
+12. Not every issue requires corporations or politicians. Adapt to the problem.
+13. Include voices that are affected by the consequences, not only powerful actors.
+14. Include minority or overlooked viewpoints whenever relevant.
 
 Possible categories of perspectives include:
 
@@ -264,9 +266,6 @@ Possible roles:
 
 
 Return structured output only.
-
-id count must start with 1
-0 NEVER
 """
 
 
