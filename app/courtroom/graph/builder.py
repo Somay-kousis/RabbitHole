@@ -23,6 +23,7 @@ from app.courtroom.nodes.perspective_node import (
 from app.courtroom.nodes.query_refine_node import query_refine_node
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env", override=True)
+from langgraph.checkpoint.memory import MemorySaver
 
 PERSPECTIVE_NODE_NAMES = [
     "p0_node",
@@ -70,12 +71,7 @@ def build_courtroom_graph():
 
     graph.add_conditional_edges(
         "hitl_node",
-        route_after_hitl,
-        {
-            "moderator_node": "moderator_node",
-            "query_refine_node": "query_refine_node",
-            "conclusion_node": "conclusion_node",
-        },
+        route_after_hitl
     )
 
     graph.add_edge("conclusion_node", END)
