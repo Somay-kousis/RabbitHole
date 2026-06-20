@@ -8,7 +8,6 @@ from app.courtroom.nodes.hitl_node import hitl_node
 from app.courtroom.nodes.judiciary_node import judiciary_node
 from app.courtroom.nodes.moderator_node import moderator_node
 from app.courtroom.nodes.perspective_node import (
-    p0_node,
     p1_node,
     p2_node,
     p3_node,
@@ -25,11 +24,7 @@ from app.courtroom.nodes.query_refine_node import query_refine_node
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env", override=True)
 
-from langgraph.checkpoint.memory import MemorySaver
-checkpointer = MemorySaver()
-
 PERSPECTIVE_NODE_NAMES = [
-    "p0_node",
     "p1_node",
     "p2_node",
     "p3_node",
@@ -43,12 +38,21 @@ PERSPECTIVE_NODE_NAMES = [
 ]
 
 
+def route_to_active_perspective_nodes(state: CourtroomState):
+    active_ids = [
+        perspective["id"]
+        for perspective in state.get("perspectives", [])
+        if perspective.get("active") is True and 1 <= perspective["id"] <= 10
+    ]
+
+    return [f"p{perspective_id}_node" for perspective_id in active_ids]
+
+
 def build_courtroom_graph():
     graph = StateGraph(CourtroomState)
 
     graph.add_node("moderator_node", moderator_node)
     graph.add_node("query_refine_node", query_refine_node)
-    graph.add_node("p0_node", p0_node)
     graph.add_node("p1_node", p1_node)
     graph.add_node("p2_node", p2_node)
     graph.add_node("p3_node", p3_node)
@@ -66,10 +70,15 @@ def build_courtroom_graph():
     graph.add_edge(START, "query_refine_node")
     graph.add_edge("query_refine_node", "moderator_node")
 
-    for node_name in PERSPECTIVE_NODE_NAMES:
-        graph.add_edge("moderator_node", node_name)
+    graph.add_conditional_edges(
+        "moderator_node",
+        route_to_active_perspective_nodes,
+        PERSPECTIVE_NODE_NAMES,
+    )
 
-    graph.add_edge(PERSPECTIVE_NODE_NAMES, "judiciary_node")
+    for node_name in PERSPECTIVE_NODE_NAMES:
+        graph.add_edge(node_name, "judiciary_node")
+
     graph.add_edge("judiciary_node", "hitl_node")
 
     graph.add_conditional_edges(

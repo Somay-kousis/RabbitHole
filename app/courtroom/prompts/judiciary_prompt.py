@@ -57,9 +57,9 @@ Judiciary corrupt:
 
 Return structured output only with this field:
 
-{
+{{
   "type": "A concise judiciary profile describing the judge's nature, likely biases, and decision style."
-}
+}}
 """
 
 
@@ -149,9 +149,9 @@ Preserve only information useful for future decisions.
 
 Return only:
 
-{
+{{
     "memory_summary": "..."
-}
+}}
 """
 
 REASON_VERDICT_PROMPT = """
@@ -230,10 +230,10 @@ Guidelines:
 
 Return only:
 
-{
+{{
   "reasoning": "...",
   "verdict": "..."
-}
+}}
 """
 
 CONFIDENCE_PROMPT = """
@@ -319,9 +319,9 @@ Verdict:
 
 Output:
 
-{
+{{
     "confidence": 0.32
-}
+}}
 
 
 Moderate case:
@@ -334,9 +334,9 @@ Verdict:
 
 Output:
 
-{
+{{
     "confidence": 0.68
-}
+}}
 
 
 Strong case:
@@ -349,15 +349,15 @@ Verdict:
 
 Output:
 
-{
+{{
     "confidence": 0.91
-}
+}}
 
 Return only:
 
-{
+{{
     "confidence": float
-}
+}}
 """
 
 LATEST_OVERALL_ROUND_SUMMARY_PROMPT = """
@@ -434,7 +434,7 @@ Examples:
 
 Return only:
 
-{
+{{
     "latest_overall_round_summary": "..."
-}
+}}
 """
