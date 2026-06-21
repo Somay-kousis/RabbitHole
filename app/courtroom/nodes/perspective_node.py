@@ -26,7 +26,19 @@ class MemoryOutput(BaseModel):
 
 def build_perspective_chain(prompt: str, output_schema: type[BaseModel]):
     return (
-        ChatPromptTemplate.from_messages([("system", prompt)])
+        ChatPromptTemplate.from_messages(
+            [
+                ("system", prompt),
+                (
+                    "human",
+                    """
+                    Generate the response based on the instructions above.
+
+                    Return ONLY the requested structured output.
+                    """
+                ),
+            ]
+        )
         | PERSPECTIVE_MODEL.with_structured_output(output_schema)
     )
 
