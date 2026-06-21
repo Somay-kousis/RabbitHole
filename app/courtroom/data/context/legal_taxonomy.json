@@ -1,0 +1,14 @@
+{
+  "constitutional_admin": "Constitutional structure, administrative law, governance, judicial review, and public administration.",
+  "criminal": "Criminal offences, investigation, procedure, sentencing, victims, child protection, and criminal justice.",
+  "civil_procedure_evidence": "Civil litigation process, limitation, pleadings, evidence, proof, and court procedure.",
+  "contract_property": "Contracts, remedies, property transfer, registration, and private-law disputes.",
+  "family_gender": "Marriage, domestic violence, gender equality, workplace harassment, and family rights.",
+  "labor_service": "Employment, industrial disputes, wages, worker rights, and public-service issues.",
+  "commercial_corporate": "Companies, insolvency, competition, arbitration, consumers, and commercial disputes.",
+  "tax_finance": "Taxation, revenue, finance, and statutory fiscal obligations.",
+  "environment_land": "Environment, pollution, wildlife, forests, land-use, and ecological governance.",
+  "technology_privacy": "Technology, cyber law, identity, data protection, privacy, and digital governance.",
+  "democracy_rights": "Elections, legal aid, access to justice, public accountability, and democratic rights.",
+  "education_ip": "Education rights and intellectual property."
+}
