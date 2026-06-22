@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.courtroom.graph.state import CourtroomState
@@ -10,31 +9,14 @@ from app.courtroom.prompts.judiciary_prompt import (
     REASON_PROMPT,
     VERDICT_PROMPT
 )
+from langchain_core.output_parsers import StrOutputParser
 
 
-class JudiciaryTypeOutput(BaseModel):
-    type: str
-
-
-class MemorySummaryOutput(BaseModel):
-    memory_summary: str
-
-
-class ReasonOutput(BaseModel):
-    reasoning: str
-
-class VerdictOutput(BaseModel):
-    verdict: str
-
-class LatestOverallRoundSummaryOutput(BaseModel):
-    latest_overall_round_summary: str
-
-
-type_chain = ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)]) | JUDICIARY_LITE_MODEL.with_structured_output(JudiciaryTypeOutput)
-memory_summary_chain = ChatPromptTemplate.from_messages([("system", MEMORY_SUMMARY_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(MemorySummaryOutput)
-reason_chain = ChatPromptTemplate.from_messages([("system", REASON_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(ReasonOutput)
-verdict_chain = ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)]) | JUDICIARY_LITE_MODEL.with_structured_output(VerdictOutput)
-latest_round_summary_chain = ChatPromptTemplate.from_messages([("system", LATEST_OVERALL_ROUND_SUMMARY_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(LatestOverallRoundSummaryOutput)
+type_chain = ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)]) | JUDICIARY_LITE_MODEL | StrOutputParser
+memory_summary_chain = ChatPromptTemplate.from_messages([("system", MEMORY_SUMMARY_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
+reason_chain = ChatPromptTemplate.from_messages([("system", REASON_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
+verdict_chain = ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)]) | JUDICIARY_LITE_MODEL | StrOutputParser
+latest_round_summary_chain = ChatPromptTemplate.from_messages([("system", LATEST_OVERALL_ROUND_SUMMARY_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
 
 
 def get_public_statements(state: CourtroomState):
