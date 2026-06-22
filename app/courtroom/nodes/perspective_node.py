@@ -8,11 +8,7 @@ from app.courtroom.prompts.perspective_prompt import (
     PUBLIC_PRIVATE_STATEMENT,
     MEMORY_GENERATION,
 )
-
-
-class PerspectiveOutput(BaseModel):
-    background: str
-    motives: str
+from langchain_core.output_parsers import StrOutputParser
 
 
 class StatementOutput(BaseModel):
@@ -20,32 +16,9 @@ class StatementOutput(BaseModel):
     public_statement: str
 
 
-class MemoryOutput(BaseModel):
-    memory_summary: str
-
-
-def build_perspective_chain(prompt: str, output_schema: type[BaseModel]):
-    return (
-        ChatPromptTemplate.from_messages(
-            [
-                ("system", prompt),
-                (
-                    "human",
-                    """
-                    Generate the response based on the instructions above.
-
-                    Return ONLY the requested structured output.
-                    """
-                ),
-            ]
-        )
-        | PERSPECTIVE_MODEL.with_structured_output(output_schema)
-    )
-
-
-perspective_chain = build_perspective_chain(PERSPECTIVE_BACKGROUND, PerspectiveOutput)
-statement_chain = build_perspective_chain(PUBLIC_PRIVATE_STATEMENT, StatementOutput)
-memory_chain = build_perspective_chain(MEMORY_GENERATION, MemoryOutput)
+perspective_chain = PERSPECTIVE_BACKGROUND | PERSPECTIVE_MODEL | StrOutputParser()
+statement_chain = PUBLIC_PRIVATE_STATEMENT | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
+memory_chain = MEMORY_GENERATION | PERSPECTIVE_MODEL | StrOutputParser()
 
 
 def get_perspective(state: CourtroomState, perspective_id: int):
@@ -62,11 +35,8 @@ def upsert_user_perspective(state: CourtroomState, user_perspective: str):
         "id": 0,
         "role": "User Perspective",
         "active": True,
-        "background": "The user has entered the courtroom to personally add their viewpoint.",
-        "motives": "Ensure their concern, correction, or objection is considered by the court but don't strictly move the decision in users favour he is a common person",
-        "memory_summary": "",
+        "background_motives": "The user has entered the courtroom to personally add their viewpoint,Ensure their concern, correction, or objection is considered by the court but don't strictly move the decision in users favour he is a common person",
         "public_statement": user_perspective,
-        "private_thoughts": "",
     }
 
     found_p0 = False
@@ -97,25 +67,23 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         return {}
 
     if turn_count == 1:
-        setup_result = perspective_chain.invoke({
-            "id": perspective["id"],
-            "role": perspective["role"],
-        })
 
         statement_result = statement_chain.invoke({
             "role": perspective["role"],
-            "background": setup_result.background,
-            "motives": setup_result.motives,
-            "memory_summary": "No memory yet.",
-            "latest_overall_round_summary": "No previous courtroom round summary yet.",
+            "background_motives": perspective_chain.invoke({
+            "id": perspective["id"],
+            "role": perspective["role"],
+        }),
         })
 
         return {
             "perspectives": [
                 {
                     **perspective,
-                    "background": setup_result.background,
-                    "motives": setup_result.motives,
+                    "background_motives": perspective_chain.invoke({
+            "id": perspective["id"],
+            "role": perspective["role"],
+        }),
                     "private_thoughts": statement_result.private_thoughts,
                     "public_statement": statement_result.public_statement,
                 },
@@ -123,8 +91,7 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         }
 
     if turn_count > 1:
-        background = perspective.get("background", "")
-        motives = perspective.get("motives", "")
+        background_motives = perspective.get("background_motives", "")
         existing_memory_summary = perspective.get("memory_summary") or "No memory yet."
         latest_overall_round_summary = state.get(
             "latest_overall_round_summary",
@@ -133,16 +100,14 @@ def perspective_node(state: CourtroomState, perspective_id: int):
 
         statement_result = statement_chain.invoke({
             "role": perspective["role"],
-            "background": background,
-            "motives": motives,
+            "background_motives": background_motives,
             "memory_summary": existing_memory_summary,
             "latest_overall_round_summary": latest_overall_round_summary,
         })
 
         memory_result = memory_chain.invoke({
             "role": perspective["role"],
-            "background": background,
-            "motives": motives,
+            "background_motives": background_motives,
             "existing_memory_summary": existing_memory_summary,
             "latest_overall_round_summary": latest_overall_round_summary,
             "latest_private_thoughts": statement_result.private_thoughts,

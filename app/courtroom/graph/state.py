@@ -8,9 +8,8 @@ class PerspectiveState(TypedDict):
     role: str
     active: bool
 
-    background: str
-    motives: str
-    memory_summary: str
+    background_motives: str
+    memory_summary: NotRequired[str]
 
     public_statement: NotRequired[str]
     private_thoughts: NotRequired[str]

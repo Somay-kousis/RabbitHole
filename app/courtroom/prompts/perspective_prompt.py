@@ -18,14 +18,7 @@ Rules:
 6. Do not generate arguments, beliefs, or public statements.
 7. Do not mention other perspectives unless naturally required.
 8. The perspective must not know it is an AI or participant in a simulation.
-9. Generate enough detail to ensure consistent behavior in future rounds.
-
-Return structured output only:
-
-{{
-  "background": "...",
-  "motives": "..."
-}}
+9. Generate enough detail to ensure consistent behavior in future rounds
 """
 
 PUBLIC_PRIVATE_STATEMENT = """
@@ -91,12 +84,6 @@ Rules:
 8. Do not include insignificant details, repeated statements, or transcripts.
 9. Separate public behavior from private reasoning when useful.
 10. If memory is empty, create an initial concise memory from the latest round and private thoughts.
-
-Return structured output only:
-
-{{
-  "memory_summary": "..."
-}}
 """
 
 # PERSPECTIVE_BACKGROUND = """
