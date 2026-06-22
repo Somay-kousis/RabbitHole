@@ -8,9 +8,8 @@ class PerspectiveState(TypedDict):
     role: str
     active: bool
 
-    background: str
-    motives: str
-    memory_summary: str
+    background_motives: str
+    memory_summary: NotRequired[str]
 
     public_statement: NotRequired[str]
     private_thoughts: NotRequired[str]
@@ -21,13 +20,12 @@ class JudiciaryState(TypedDict):
     memory_summary: NotRequired[str]
     reasoning: NotRequired[str]
     verdict: NotRequired[str]
-    confidence: NotRequired[float]
 
 
 CourtAction = Literal[
-    "continue debate",
-    "continue debate with input",
-    "generate conclusion",
+    "continue_debate",
+    "continue_debate_with_input",
+    "generate_conclusion",
 ]
 
 

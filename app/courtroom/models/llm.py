@@ -12,14 +12,23 @@ MODERATOR_MODEL = ChatGroq(
     temperature=1
 )
 
-PERSPECTIVE_MODEL = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite",
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
+PERSPECTIVE_MODEL = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=1
+)
+
+PERSPECTIVE_LITE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=1
 )
 
 SESSION_MODEL = ChatGroq(
     model="llama-3.3-70b-versatile",
+    temperature=1
+)
+
+JUDICIARY_LITE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=1
 )
 
