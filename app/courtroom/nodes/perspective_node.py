@@ -9,6 +9,7 @@ from app.courtroom.prompts.perspective_prompt import (
     MEMORY_GENERATION,
 )
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
 
 class StatementOutput(BaseModel):
@@ -16,9 +17,30 @@ class StatementOutput(BaseModel):
     public_statement: str
 
 
-perspective_chain = PERSPECTIVE_BACKGROUND | PERSPECTIVE_LITE_MODEL | StrOutputParser()
-statement_chain = PUBLIC_PRIVATE_STATEMENT | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
-memory_chain = MEMORY_GENERATION | PERSPECTIVE_MODEL | StrOutputParser()
+from langchain_core.prompts import ChatPromptTemplate
+
+perspective_chain = (
+    ChatPromptTemplate.from_messages(
+        [("system", PERSPECTIVE_BACKGROUND)]
+    )
+    | PERSPECTIVE_LITE_MODEL
+    | StrOutputParser()
+)
+
+statement_chain = (
+    ChatPromptTemplate.from_messages(
+        [("system", PUBLIC_PRIVATE_STATEMENT)]
+    )
+    | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
+)
+
+memory_chain = (
+    ChatPromptTemplate.from_messages(
+        [("system", MEMORY_GENERATION)]
+    )
+    | PERSPECTIVE_MODEL
+    | StrOutputParser()
+)
 
 
 def get_perspective(state: CourtroomState, perspective_id: int):
@@ -67,23 +89,21 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         return {}
 
     if turn_count == 1:
+        background_motives = perspective_chain.invoke({
+            "id": perspective["id"],
+            "role": perspective["role"],
+        })
 
         statement_result = statement_chain.invoke({
             "role": perspective["role"],
-            "background_motives": perspective_chain.invoke({
-            "id": perspective["id"],
-            "role": perspective["role"],
-        }),
+            "background_motives": background_motives,
         })
 
         return {
             "perspectives": [
                 {
                     **perspective,
-                    "background_motives": perspective_chain.invoke({
-            "id": perspective["id"],
-            "role": perspective["role"],
-        }),
+                    "background_motives": background_motives,
                     "private_thoughts": statement_result.private_thoughts,
                     "public_statement": statement_result.public_statement,
                 },
