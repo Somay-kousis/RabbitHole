@@ -18,12 +18,6 @@ User case:
 
 Judiciary corrupt:
 {judiciary_corrupt}
-
-Return structured output only:
-
-{{
-  "type": "Concise judiciary profile."
-}}
 """
 
 MEMORY_SUMMARY_PROMPT = """
@@ -55,20 +49,13 @@ Rules:
 6. Compress aggressively; remove transcript-like detail.
 7. Do not duplicate information from the latest round.
 8. Memory must represent understanding, not narration.
-
-Return structured output only:
-
-{{
-  "memory_summary": "..."
-}}
 """
 
-REASON_VERDICT_PROMPT = """
+REASON_PROMPT = """
 You are the judiciary in an AI courtroom.
 
-Generate judicial reasoning and a temporary verdict for the current round.
+Analyze the case using:
 
-Input:
 - judiciary_type
 - memory_summary
 - latest_overall_round_summary
@@ -76,90 +63,52 @@ Input:
 - user_input
 - judiciary_corrupt
 
-Context:
-- memory_summary: prior understanding of the case
-- latest_overall_round_summary: previous round context
-- public_statements: current arguments from all perspectives
+Focus on:
+- strongest arguments from each side
+- weakest arguments and contradictions
+- credibility of perspectives
+- evidence quality
+- incentives and motivations
+- unresolved questions
+- overall direction of the case
 
 Rules:
-
-1. Base reasoning on courtroom record; avoid unsupported assumptions.
-2. Evaluate based on:
-   - evidence and consistency
-   - contradictions and credibility
-   - incentives and responsibility
-   - harms and uncertainty
-   - moral/legal implications
-3. Identify strong and weak perspectives with brief justification.
-4. If evidence is insufficient, state it clearly.
-5. Do not assume full resolution if key questions remain.
-
-6. If judiciary_corrupt = true:
-   - introduce subtle bias toward power, authority, or institutional interests
-   - avoid explicitly stating corruption
-   - keep reasoning publicly plausible
-
-7. If judiciary_corrupt = false:
-   - remain balanced and uncertainty-aware
-   - do not default to powerful actors
-
-8. Verdict options (choose one):
-   - continue debate
-   - insufficient evidence
-   - side A currently stronger
-   - side B currently stronger
-   - shared responsibility
-   - state responsibility significant
-   - ready for conclusion
-
-9. Keep reasoning concise and grounded in arguments presented.
-
-Return structured output only:
-
-{{
-  "reasoning": "...",
-  "verdict": "..."
-}}
+- Do NOT give a verdict
+- Do NOT decide a winner
+- Do NOT be conclusive
+- Be analytical and balanced
+- If corrupt, allow subtle bias in evaluation but do not explicitly state it
 """
 
-CONFIDENCE_PROMPT = """
-Estimate judiciary confidence in the current verdict.
+VERDICT_PROMPT = """
+You are the judiciary in an AI courtroom.
+
+Based on the provided reasoning and case context, produce a verdict.
 
 Input:
 - judiciary_type
 - memory_summary
-- latest_overall_round_summary
 - reasoning
-- verdict
+- latest_overall_round_summary
 
-Return:
-- confidence (float 0 to 1)
+Task:
+Convert reasoning into a clear current-round verdict.
 
-Meaning:
-0.0 = no confidence, unclear case
-0.25 = very uncertain, weak resolution
-0.5 = moderate confidence, mixed signals
-0.75 = strong confidence, mostly consistent evidence
-1.0 = near certain, minimal doubt
+Allowed verdicts:
+- continue debate
+- insufficient evidence
+- side A currently stronger
+- side B currently stronger
+- shared responsibility
+- state responsibility significant
+- ready for conclusion
 
 Rules:
-1. Base confidence on:
-   - evidence strength
-   - argument consistency
-   - contradictions and missing information
-   - stability across rounds
-   - reliability of perspectives
-   - strength of current reasoning
-2. Do not increase confidence just because many sides agree.
-3. Contradictions and uncertainty reduce confidence.
-4. Confidence should change gradually across rounds unless major new evidence appears.
-5. Corrupt judiciary may be overconfident or ignore uncertainty.
-
-Return structured output only:
-
-{{
-  "confidence": float
-}}
+- Base decision strictly on reasoning
+- Do not re-evaluate the entire case
+- Do not introduce new arguments
+- Keep output minimal and decisive
+- If corrupt, bias interpretation subtly toward power/authority side
 """
 
 LATEST_OVERALL_ROUND_SUMMARY_PROMPT = """
@@ -171,11 +120,8 @@ Input:
 - judiciary_verdict
 - judiciary_confidence
 
-Generate:
-- latest_overall_round_summary
-
 Purpose:
-Public summary shared with all perspectives in the next round.
+Public summary shared with all perspectives in the next round
 
 Rules:
 1. Summarize only meaningful developments:
@@ -192,12 +138,6 @@ Rules:
 7. Do not include private thoughts or hidden motives.
 8. Keep the summary self-contained for future rounds.
 9. Write as a neutral courtroom record.
-
-Return structured output only:
-
-{{
-  "latest_overall_round_summary": "..."
-}}
 """
 
 # JUDICIARY_TYPE_PROMPT = """

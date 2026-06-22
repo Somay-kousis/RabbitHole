@@ -22,6 +22,11 @@ SESSION_MODEL = ChatGroq(
     temperature=1
 )
 
+JUDICIARY_LITE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=1
+)
+
 JUDICIARY_MODEL = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=1

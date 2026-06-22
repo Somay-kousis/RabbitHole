@@ -2,13 +2,13 @@ from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.courtroom.graph.state import CourtroomState
-from app.courtroom.models.llm import JUDICIARY_MODEL
+from app.courtroom.models.llm import JUDICIARY_MODEL, JUDICIARY_LITE_MODEL
 from app.courtroom.prompts.judiciary_prompt import (
     JUDICIARY_TYPE_PROMPT,
     MEMORY_SUMMARY_PROMPT,
-    REASON_VERDICT_PROMPT,
-    CONFIDENCE_PROMPT,
     LATEST_OVERALL_ROUND_SUMMARY_PROMPT,
+    REASON_PROMPT,
+    VERDICT_PROMPT
 )
 
 
@@ -20,34 +20,21 @@ class MemorySummaryOutput(BaseModel):
     memory_summary: str
 
 
-class ReasonVerdictOutput(BaseModel):
+class ReasonOutput(BaseModel):
     reasoning: str
+
+class VerdictOutput(BaseModel):
     verdict: str
-
-
-class ConfidenceOutput(BaseModel):
-    confidence: float
-
 
 class LatestOverallRoundSummaryOutput(BaseModel):
     latest_overall_round_summary: str
 
 
-def build_chain(prompt: str, output_schema: type[BaseModel]):
-    return (
-        ChatPromptTemplate.from_messages([("system", prompt)])
-        | JUDICIARY_MODEL.with_structured_output(output_schema)
-    )
-
-
-type_chain = build_chain(JUDICIARY_TYPE_PROMPT, JudiciaryTypeOutput)
-memory_summary_chain = build_chain(MEMORY_SUMMARY_PROMPT, MemorySummaryOutput)
-reason_verdict_chain = build_chain(REASON_VERDICT_PROMPT, ReasonVerdictOutput)
-confidence_chain = build_chain(CONFIDENCE_PROMPT, ConfidenceOutput)
-latest_round_summary_chain = build_chain(
-    LATEST_OVERALL_ROUND_SUMMARY_PROMPT,
-    LatestOverallRoundSummaryOutput,
-)
+type_chain = ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)]) | JUDICIARY_LITE_MODEL.with_structured_output(JudiciaryTypeOutput)
+memory_summary_chain = ChatPromptTemplate.from_messages([("system", MEMORY_SUMMARY_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(MemorySummaryOutput)
+reason_chain = ChatPromptTemplate.from_messages([("system", REASON_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(ReasonOutput)
+verdict_chain = ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)]) | JUDICIARY_LITE_MODEL.with_structured_output(VerdictOutput)
+latest_round_summary_chain = ChatPromptTemplate.from_messages([("system", LATEST_OVERALL_ROUND_SUMMARY_PROMPT)]) | JUDICIARY_MODEL.with_structured_output(LatestOverallRoundSummaryOutput)
 
 
 def get_public_statements(state: CourtroomState):
@@ -84,7 +71,6 @@ def judiciary_node(state: CourtroomState):
             "existing_memory_summary": judiciary.get("memory_summary", ""),
             "previous_reasoning": judiciary.get("reasoning", ""),
             "previous_verdict": judiciary.get("verdict", ""),
-            "previous_confidence": judiciary.get("confidence", 0.0),
             "latest_overall_round_summary": state.get(
                 "latest_overall_round_summary",
                 "",
@@ -96,7 +82,7 @@ def judiciary_node(state: CourtroomState):
     if turn_count < 1:
         return {}
 
-    reason_verdict_result = reason_verdict_chain.invoke({
+    reason_result = reason_chain.invoke({
         "judiciary_type": judiciary_type,
         "memory_summary": memory_summary_text,
         "latest_overall_round_summary": state.get(
@@ -108,30 +94,30 @@ def judiciary_node(state: CourtroomState):
         "judiciary_corrupt": state["judiciary_corrupt"],
     })
 
-    confidence_result = confidence_chain.invoke({
-        "judiciary_type": judiciary_type,
-        "memory_summary": memory_summary_text,
-        "latest_overall_round_summary": state.get(
-            "latest_overall_round_summary",
-            "No previous courtroom round summary yet.",
-        ),
-        "reasoning": reason_verdict_result.reasoning,
-        "verdict": reason_verdict_result.verdict,
-    })
+    verdict_result = verdict_chain.invoke({
+    "judiciary_type": judiciary_type,
+    "memory_summary": memory_summary_text,
+    "latest_overall_round_summary": state.get(
+        "latest_overall_round_summary",
+        "No previous courtroom round summary yet.",
+    ),
+    "public_statements": public_statements,
+    "user_input": state["user_input"],
+    "judiciary_corrupt": state["judiciary_corrupt"],
+})
+
 
     latest_round_summary_result = latest_round_summary_chain.invoke({
         "public_statements": public_statements,
-        "judiciary_reasoning": reason_verdict_result.reasoning,
-        "judiciary_verdict": reason_verdict_result.verdict,
-        "judiciary_confidence": confidence_result.confidence,
+        "judiciary_reasoning": reason_result,
+        "judiciary_verdict": verdict_result,
     })
 
     judiciary_state = {
         "type": judiciary_type,
         "memory_summary": memory_summary_text,
-        "reasoning": reason_verdict_result.reasoning,
-        "verdict": reason_verdict_result.verdict,
-        "confidence": confidence_result.confidence,
+        "judiciary_reasoning": reason_result,
+        "judiciary_verdict": verdict_result,
     }
 
     return {

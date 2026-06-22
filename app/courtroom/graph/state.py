@@ -21,13 +21,12 @@ class JudiciaryState(TypedDict):
     memory_summary: NotRequired[str]
     reasoning: NotRequired[str]
     verdict: NotRequired[str]
-    confidence: NotRequired[float]
 
 
 CourtAction = Literal[
-    "continue debate",
-    "continue debate with input",
-    "generate conclusion",
+    "continue_debate",
+    "continue_debate_with_input",
+    "generate_conclusion",
 ]
 
 
