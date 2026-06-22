@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from app.courtroom.graph.state import CourtroomState
-from app.courtroom.models.llm import PERSPECTIVE_MODEL
+from app.courtroom.models.llm import PERSPECTIVE_MODEL, PERSPECTIVE_LITE_MODEL
 from langchain_core.prompts import ChatPromptTemplate
 from app.courtroom.prompts.perspective_prompt import (
     PERSPECTIVE_BACKGROUND,
@@ -16,7 +16,7 @@ class StatementOutput(BaseModel):
     public_statement: str
 
 
-perspective_chain = PERSPECTIVE_BACKGROUND | PERSPECTIVE_MODEL | StrOutputParser()
+perspective_chain = PERSPECTIVE_BACKGROUND | PERSPECTIVE_LITE_MODEL | StrOutputParser()
 statement_chain = PUBLIC_PRIVATE_STATEMENT | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
 memory_chain = MEMORY_GENERATION | PERSPECTIVE_MODEL | StrOutputParser()
 

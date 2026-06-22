@@ -17,6 +17,11 @@ PERSPECTIVE_MODEL = ChatGroq(
     temperature=1
 )
 
+PERSPECTIVE_LITE_MODEL = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=1
+)
+
 SESSION_MODEL = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=1
