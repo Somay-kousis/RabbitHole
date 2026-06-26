@@ -33,6 +33,9 @@ Topic and user preferences:
 Number of perspectives:
 {number_of_perspectives}
 
+Specific requested roles to include:
+{specific_roles}
+
 Generate exactly {number_of_perspectives} perspectives.
 
 Rules:
@@ -41,23 +44,22 @@ Rules:
    - role
    - active
 3. Do not assign ids.
-4. User-requested roles, groups, and constraints are mandatory unless duplicated or impossible.
-5. Include requested roles first, then fill remaining slots with balancing perspectives.
-6. If requested roles exceed the limit, keep the most central ones.
-7. Each role must represent a genuinely distinct stakeholder, worldview, institution, ideology, incentive, or source of power.
-8. Avoid duplicate viewpoints.
-9. Include opposing sides when relevant.
-10. Prefer specific, realistic roles (e.g., "Coal Industry Executive" over "Businessman").
-11. Prioritize:
+4. You must prioritize and include the roles specified in 'Specific requested roles to include'. Include them first, then fill remaining slots with balancing perspectives.
+5. If requested roles exceed the limit of {number_of_perspectives}, keep the most central ones.
+6. Each role must represent a genuinely distinct stakeholder, worldview, institution, ideology, incentive, or source of power.
+7. Avoid duplicate viewpoints.
+8. Include opposing sides when relevant.
+9. Prefer specific, realistic roles (e.g., "Coal Industry Executive" over "Businessman").
+10. Prioritize:
     a. directly affected people
     b. decision makers and institutions
     c. subject experts
     d. ideological or moral voices
     e. media or observers
-12. Include overlooked or minority perspectives when relevant.
-13. Do not assume people or institutions are honest, corrupt, biased, or malicious by default.
-14. Introduce corruption, propaganda, conflicting incentives, or ideological divisions only when central to the topic.
-15. Roles should represent incentives and worldviews, not stereotypes.
+11. Include overlooked or minority perspectives when relevant.
+12. Do not assume people or institutions are honest, corrupt, biased, or malicious by default.
+13. Introduce corruption, propaganda, conflicting incentives, or ideological divisions only when central to the topic.
+14. Roles should represent incentives and worldviews, not stereotypes.
 
 Return structured output only.
 """

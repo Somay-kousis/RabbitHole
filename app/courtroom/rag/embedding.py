@@ -12,5 +12,5 @@ def get_embedding_model():
         
     return JinaEmbeddings(
         jina_api_key=jina_api_key,
-        model_name="jina-embeddings-v2-base-en"
+        model_name="jina-embeddings-v5-text-small"
     )

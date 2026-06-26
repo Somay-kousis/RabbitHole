@@ -13,7 +13,7 @@ from app.courtroom.prompts.moderator_prompt import (
 
 
 class PerspectiveCount(BaseModel):
-    count: int = Field(ge=3, le=10)
+    count: int = Field(ge=2, le=10)
 
 
 class RoleCard(BaseModel):
@@ -69,25 +69,41 @@ def moderator_node(state: CourtroomState):
         return {}
 
     query = state["user_input"]
+    user_commands = state.get("user_commands", {})
 
-    number_result = perspective_count_chain.invoke({
-        "query": query,
-    })
+    # 1. Perspective Count
+    requested_count = user_commands.get("number_of_perspectives")
+    if requested_count is not None:
+        perspective_count = requested_count
+    else:
+        number_result = perspective_count_chain.invoke({
+            "query": query,
+        })
+        perspective_count = number_result.count
 
+    # 2. Role Assignment
+    specific_roles = user_commands.get("specific_roles") or []
     role_result = role_assignment_chain.invoke({
         "query": query,
-        "number_of_perspectives": number_result.count,
+        "number_of_perspectives": perspective_count,
+        "specific_roles": ", ".join(specific_roles) if specific_roles else "None specified",
     })
 
-    judiciary_result = judiciary_type_chain.invoke({
-        "query": query,
-    })
+    # 3. Judiciary Type
+    requested_judiciary = user_commands.get("judiciary_type")
+    if requested_judiciary is not None:
+        judiciary_corrupt = (requested_judiciary.lower() == "corrupt")
+    else:
+        judiciary_result = judiciary_type_chain.invoke({
+            "query": query,
+        })
+        judiciary_corrupt = judiciary_result.judiciary_corrupt
 
     return {
-        "number_of_perspectives": number_result.count,
+        "number_of_perspectives": perspective_count,
         "perspectives": [
             build_perspective(index, perspective)
             for index, perspective in enumerate(role_result.perspectives, start=1)
         ],
-        "judiciary_corrupt": judiciary_result.judiciary_corrupt,
+        "judiciary_corrupt": judiciary_corrupt,
     }

@@ -1,23 +1,11 @@
-USER_INPUT_REFINER_PROMPT = """
-Convert a raw user query into a clear investigation request for a multi-agent courtroom.
+USER_INPUT_REFINER_PROMPT = """You are responsible for converting raw user queries into a structured courtroom case configuration.
 
-Do not answer the question.
+Analyze the user input and extract any explicit configuration commands requested by the user, specifically looking for:
+1. Judiciary configuration (e.g. 'corrupt' 'honest')
+2. Requested number of perspectives (e.g. 3, 5, 10)
+3. Specific roles or stakeholders they want present in the courtroom (e.g. 'corrupt politician', 'factory worker')
 
-Rules:
-1. Preserve the user's original meaning and tone.
-2. Expand vague requests into concrete investigation objectives.
-3. Include all entities, people, organizations, events, locations, dates, claims, and concerns mentioned by the user.
-4. Do not invent missing information; preserve uncertainties as open questions or investigation gaps.
-5. Preserve ambiguity when present.
-6. Do not inject opinions, conclusions, or decide who is right.
-7. Preserve all explicit user constraints exactly, including:
-   - number of perspectives
-   - requested roles/groups
-   - corrupt or neutral judiciary
-   - courtroom rules or tone
-8. The output should be suitable for a multi-perspective courtroom investigation.
-
-Return only the refined request.
+Also, rewrite the user query as a formal, objective case/investigation narrative under case_representation. Do not answer the query itself.
 """
 
 USER_PERSPECTIVE_PROMPT = """

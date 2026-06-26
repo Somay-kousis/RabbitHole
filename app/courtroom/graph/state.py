@@ -29,8 +29,15 @@ CourtAction = Literal[
 ]
 
 
+class UserCommandsState(TypedDict):
+    judiciary_type: NotRequired[str]
+    number_of_perspectives: NotRequired[int]
+    specific_roles: NotRequired[List[str]]
+
+
 class CourtroomState(TypedDict):
     user_input: str
+    user_commands: NotRequired[UserCommandsState]
     number_of_perspectives: NotRequired[int]
     perspectives: NotRequired[Annotated[List[PerspectiveState], merge_perspectives]]
 
@@ -45,3 +52,4 @@ class CourtroomState(TypedDict):
     next_action: NotRequired[CourtAction]
 
     turn_count: int
+

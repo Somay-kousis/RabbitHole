@@ -18,7 +18,7 @@ PERSPECTIVE_MODEL = ChatGroq(
 )
 
 PERSPECTIVE_LITE_MODEL = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="gemma2-9b-it",
     temperature=1
 )
 
@@ -28,7 +28,7 @@ SESSION_MODEL = ChatGroq(
 )
 
 JUDICIARY_LITE_MODEL = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="gemma2-9b-it",
     temperature=1
 )
 
@@ -38,11 +38,16 @@ JUDICIARY_MODEL = ChatGroq(
 )
 
 QUERYREFINE_MODEL = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
+    temperature=1
+)
+
+QUERYREFINE_LITE_MODEL = ChatGroq(
+    model="gemma2-9b-it",
     temperature=1
 )
 
 CONCLUSION_MODEL = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="gemma2-9b-it",
     temperature=1
 )
