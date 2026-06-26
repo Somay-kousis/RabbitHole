@@ -166,3 +166,5 @@ yarn-error.log*
 # ==========================================
 !.gitkeep
 ```
+# Added by Braintrust Wizard
+.braintrust.json
