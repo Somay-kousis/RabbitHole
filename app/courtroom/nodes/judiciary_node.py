@@ -1,3 +1,4 @@
+from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.courtroom.graph.state import CourtroomState
@@ -12,11 +13,45 @@ from app.courtroom.prompts.judiciary_prompt import (
 from langchain_core.output_parsers import StrOutputParser
 
 
-type_chain = ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)]) | JUDICIARY_LITE_MODEL | StrOutputParser
-memory_summary_chain = ChatPromptTemplate.from_messages([("system", MEMORY_SUMMARY_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
-reason_chain = ChatPromptTemplate.from_messages([("system", REASON_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
-verdict_chain = ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)]) | JUDICIARY_LITE_MODEL | StrOutputParser
-latest_round_summary_chain = ChatPromptTemplate.from_messages([("system", LATEST_OVERALL_ROUND_SUMMARY_PROMPT)]) | JUDICIARY_MODEL | StrOutputParser
+class JudiciaryTypeOutput(BaseModel):
+    type: str = Field(description="A concise judiciary profile describing the judge's nature, likely biases, and decision style.")
+
+
+class MemorySummaryOutput(BaseModel):
+    memory_summary: str = Field(description="The updated judiciary memory summary.")
+
+
+class LatestRoundSummaryOutput(BaseModel):
+    latest_overall_round_summary: str = Field(description="The public record/summary of the courtroom round.")
+
+
+type_chain = (
+    ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)])
+    | JUDICIARY_LITE_MODEL.with_structured_output(JudiciaryTypeOutput)
+)
+
+memory_summary_chain = (
+    ChatPromptTemplate.from_messages([("system", MEMORY_SUMMARY_PROMPT)])
+    | JUDICIARY_MODEL.with_structured_output(MemorySummaryOutput)
+)
+
+reason_chain = (
+    ChatPromptTemplate.from_messages([("system", REASON_PROMPT)])
+    | JUDICIARY_MODEL
+    | StrOutputParser()
+)
+
+verdict_chain = (
+    ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)])
+    | JUDICIARY_LITE_MODEL
+    | StrOutputParser()
+)
+
+latest_round_summary_chain = (
+    ChatPromptTemplate.from_messages([("system", LATEST_OVERALL_ROUND_SUMMARY_PROMPT)])
+    | JUDICIARY_MODEL.with_structured_output(LatestRoundSummaryOutput)
+)
+
 
 
 def get_public_statements(state: CourtroomState):
@@ -98,8 +133,8 @@ def judiciary_node(state: CourtroomState):
     judiciary_state = {
         "type": judiciary_type,
         "memory_summary": memory_summary_text,
-        "judiciary_reasoning": reason_result,
-        "judiciary_verdict": verdict_result,
+        "reasoning": reason_result,
+        "verdict": verdict_result,
     }
 
     return {

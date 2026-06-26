@@ -2,7 +2,7 @@ from app.courtroom.graph.state import CourtroomState
 
 
 def route_after_hitl(state: CourtroomState):
-    action = state.get("next_action", "generate conclusion")
+    action = state.get("next_action", "generate_conclusion")
 
     if action == "continue_debate":
         return "moderator_node"
