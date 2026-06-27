@@ -1,40 +1,40 @@
+import os
+from dotenv import load_dotenv
 from app.courtroom.rag.embedding import get_embedding_model
 from app.courtroom.rag.vectorstore import get_pinecone_index
 from langchain_core.documents import Document
+from langchain_community.retrievers import PineconeHybridSearchRetriever
+from pinecone_text.sparse import BM25Encoder
 
-def search_documents(query:str, k: int = 4) -> list[Document]:
-    """
-    Searches the Pinecone vector store for documents similar to the query.
-    Returns the top 'k' matching documents as LangChain Document objects.
-    """
+load_dotenv()
 
+# Get Pinecone API key
+pinecone_api = os.getenv("PINECONE_API_KEY")
+
+# Initialize the BM25 sparse encoder
+bm25_encoder = BM25Encoder.default()
+
+def search_documents(query: str, k: int = 4) -> list[Document]:
+    """
+    Searches the Pinecone vector store using hybrid (dense + sparse) search.
+    """
     index = get_pinecone_index()
     embedding_model = get_embedding_model()
-    query_vector = embedding_model.embed_query(query)
-
-    response = index.query(
-        vector=query_vector,
-        top_k=k,
-        include_metadata=True
+    
+    # 1. Initialize the LangChain Hybrid Retriever
+    retriever = PineconeHybridSearchRetriever(
+        embeddings=embedding_model,
+        sparse_encoder=bm25_encoder,
+        index=index
     )
-
-    documents = []
-    for match in response.get("matches", []):
-        metadata = match.get("metadata", {})
-        
-        # Pop the text out of metadata so it isn't duplicated in the metadata dict
-        text = metadata.pop("text", "")
-        
-        doc = Document(
-            page_content=text,
-            metadata=metadata
-        )
-        documents.append(doc)
-        
-    return documents    
+    
+    # Configure it to retrieve 'k' results
+    retriever.k = k
+    
+    # 2. Invoke the hybrid search
+    return retriever.invoke(query)
 
 if __name__ == "__main__":
-    # A quick test to verify retrieval is working
     test_query = "What is the rarest of rare doctrine?"
     
     try:
@@ -49,4 +49,3 @@ if __name__ == "__main__":
             
     except Exception as e:
         print(f"Error during retrieval: {e}")
-

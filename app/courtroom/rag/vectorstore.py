@@ -1,11 +1,14 @@
 import os 
+import time
 from pinecone import Pinecone, ServerlessSpec
 from dotenv import load_dotenv
 from app.courtroom.rag.embedding import get_embedding_model
 from langchain_core.documents import Document
-import time
+from pinecone_text.sparse import BM25Encoder 
 
 load_dotenv()
+
+bm25_encoder = BM25Encoder.default()
 
 def get_pinecone_index(index_name: str = "courtroom-knowledge"):
     api_key = os.getenv("PINECONE_API_KEY")
@@ -28,7 +31,6 @@ def get_pinecone_index(index_name: str = "courtroom-knowledge"):
         print("Index created successfully.")
         
     return pc.Index(index_name)
-
 
 def add_documents_to_pinecone(documents: list[Document], index, batch_size: int = 100):
     if not documents:
@@ -66,21 +68,25 @@ def add_documents_to_pinecone(documents: list[Document], index, batch_size: int 
         
         # Retry loop for handling network hiccups
         retries = 5
-        delay = 2  # Start with a 2-second delay
+        delay = 2
         
         while retries > 0:
             try:
-                # 1. Get embeddings for the batch
+                # 1. Get dense embeddings for the batch
                 texts = [doc.page_content for doc in batch]
                 embeddings = embedding_model.embed_documents(texts)
                 
-                # 2. Format vectors for Pinecone upsert
+                # 2. Get sparse embeddings for the batch
+                sparse_embeddings = bm25_encoder.encode_documents(texts)  # <--- Generate sparse vectors
+                
+                # 3. Format vectors for Pinecone upsert (including sparse_values)
                 vectors = []
                 for idx, (doc, vector) in enumerate(zip(batch, embeddings)):
                     chunk_id = f"chunk_{i + idx}"
                     vectors.append({
                         "id": chunk_id,
                         "values": vector,
+                        "sparse_values": sparse_embeddings[idx],  # <--- Add sparse values here
                         "metadata": {
                             "text": doc.page_content,
                             "source": doc.metadata.get("source", "unknown"),
@@ -89,9 +95,9 @@ def add_documents_to_pinecone(documents: list[Document], index, batch_size: int 
                         }
                     })
                     
-                # 3. Upsert to Pinecone
+                # 4. Upsert to Pinecone
                 index.upsert(vectors=vectors)
-                break  # Success! Break the retry loop
+                break
                 
             except Exception as e:
                 retries -= 1
@@ -100,9 +106,8 @@ def add_documents_to_pinecone(documents: list[Document], index, batch_size: int 
                     raise e
                 print(f"Retrying in {delay} seconds ({retries} retries left)...")
                 time.sleep(delay)
-                delay *= 2  # Double the delay (exponential backoff)
+                delay *= 2
                 
-        # Small delay between successful batches to respect rate limits
         time.sleep(1)
         
     print("All documents successfully uploaded to Pinecone!")
