@@ -3,6 +3,7 @@ from pinecone import Pinecone, ServerlessSpec
 from dotenv import load_dotenv
 from app.courtroom.rag.embedding import get_embedding_model
 from langchain_core.documents import Document
+import time
 
 load_dotenv()
 
@@ -28,42 +29,80 @@ def get_pinecone_index(index_name: str = "courtroom-knowledge"):
         
     return pc.Index(index_name)
 
+
 def add_documents_to_pinecone(documents: list[Document], index, batch_size: int = 100):
     if not documents:
         print("No documents to add.")
         return
         
     embedding_model = get_embedding_model()
+    
+    # Check how many vectors already exist in Pinecone
+    try:
+        stats = index.describe_index_stats()
+        existing_count = stats.get("total_vector_count", 0)
+        if not isinstance(existing_count, int):
+            existing_count = stats.total_vector_count
+        print(f"Pinecone index currently contains {existing_count} vectors.")
+    except Exception as e:
+        print(f"Could not retrieve index stats ({e}). Starting from the beginning.")
+        existing_count = 0
+
     print(f"Embedding and uploading {len(documents)} chunks to Pinecone in batches of {batch_size}...")
     
     for i in range(0, len(documents), batch_size):
-        batch = documents[i : i + batch_size]
-        print(f"Processing batch {i//batch_size + 1}...")
-        
-        # 1. Get embeddings for the batch
-        texts = [doc.page_content for doc in batch]
-        embeddings = embedding_model.embed_documents(texts)
-        
-        # 2. Format vectors for Pinecone upsert
-        vectors = []
-        for idx, (doc, vector) in enumerate(zip(batch, embeddings)):
-            chunk_id = f"chunk_{i + idx}"
-            vectors.append({
-                "id": chunk_id,
-                "values": vector,
-                "metadata": {
-                    "text": doc.page_content,
-                    "source": doc.metadata.get("source", "unknown"),
-                    "category": doc.metadata.get("category", "unknown"),
-                    "doc_type": doc.metadata.get("doc_type", "unknown")
-                }
-            })
+        # Skip batches that are already uploaded
+        if i + batch_size <= existing_count:
+            continue
             
-        # 3. Upsert to Pinecone
-        index.upsert(vectors=vectors)
+        batch = documents[i : i + batch_size]
+        batch_num = i // batch_size + 1
+        
+        # If we skipped some, let the user know we are resuming
+        if i >= existing_count and i - batch_size < existing_count:
+            print(f"Resuming upload from batch {batch_num} (chunk {i})...")
+            
+        print(f"Processing batch {batch_num}...")
+        
+        # Retry loop for handling network hiccups
+        retries = 5
+        delay = 2  # Start with a 2-second delay
+        
+        while retries > 0:
+            try:
+                # 1. Get embeddings for the batch
+                texts = [doc.page_content for doc in batch]
+                embeddings = embedding_model.embed_documents(texts)
+                
+                # 2. Format vectors for Pinecone upsert
+                vectors = []
+                for idx, (doc, vector) in enumerate(zip(batch, embeddings)):
+                    chunk_id = f"chunk_{i + idx}"
+                    vectors.append({
+                        "id": chunk_id,
+                        "values": vector,
+                        "metadata": {
+                            "text": doc.page_content,
+                            "source": doc.metadata.get("source", "unknown"),
+                            "category": doc.metadata.get("category", "unknown"),
+                            "doc_type": doc.metadata.get("doc_type", "unknown")
+                        }
+                    })
+                    
+                # 3. Upsert to Pinecone
+                index.upsert(vectors=vectors)
+                break  # Success! Break the retry loop
+                
+            except Exception as e:
+                retries -= 1
+                print(f"Connection error on batch {batch_num}: {e}")
+                if retries == 0:
+                    raise e
+                print(f"Retrying in {delay} seconds ({retries} retries left)...")
+                time.sleep(delay)
+                delay *= 2  # Double the delay (exponential backoff)
+                
+        # Small delay between successful batches to respect rate limits
+        time.sleep(1)
         
     print("All documents successfully uploaded to Pinecone!")
-
-
-    
-    
