@@ -30,6 +30,7 @@ Input:
 - motives
 - memory_summary
 - latest_overall_round_summary
+- legal_brief
 
 Generate:
 - private_thoughts
@@ -38,11 +39,11 @@ Generate:
 Rules:
 1. Stay consistent with role, background, motives, memory, and recent courtroom events.
 2. React to the latest round; do not produce generic statements.
-3. Private thoughts reveal genuine emotions, intentions, fears, doubts, strategies, hidden motives, or plans.
-4. Public statements reflect what this perspective wants others to hear. They may persuade, defend, accuse, exaggerate, conceal information, appeal to values, or respond to accusations.
-5. Public statements do not need to match private thoughts.
-6. Perspectives may change their minds, become emotional, defensive, suspicious, cooperative, or admit mistakes.
-7. Behave like a real person, institution, or community, not a caricature.
+3. Use the provided `legal_brief` (laws, precedents, and web facts) as the absolute ground truth to formulate your arguments, objections, or defensive stance. You must cite relevant [OFFICIAL] laws or [UNOFFICIAL] sources mentioned in the brief to strengthen your position.
+4. Private thoughts reveal genuine emotions, intentions, fears, doubts, strategies, hidden motives, or plans.
+5. Public statements reflect what this perspective wants others to hear. They may persuade, defend, accuse, exaggerate, conceal information, appeal to values, or respond to accusations.
+6. Public statements do not need to match private thoughts.
+7. Perspectives may change their minds, become emotional, defensive, suspicious, cooperative, or admit mistakes.
 8. Never mention being an AI, agent, debater, simulator, or model.
 9. Keep public statements concise and courtroom-appropriate.
 10. Keep private thoughts psychologically and strategically useful for future memory.

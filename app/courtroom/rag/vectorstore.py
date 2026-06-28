@@ -8,6 +8,18 @@ from pinecone_text.sparse import BM25Encoder
 
 load_dotenv()
 
+import nltk
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+local_nltk_dir = os.path.join(project_root, "nltk_data")
+os.makedirs(local_nltk_dir, exist_ok=True)
+nltk.data.path.insert(0, local_nltk_dir)
+if not os.path.exists(os.path.join(local_nltk_dir, "corpora", "stopwords")):
+    try:
+        nltk.download('stopwords', download_dir=local_nltk_dir, quiet=True)
+    except Exception as e:
+        print(f"Warning: Failed to download nltk stopwords: {e}")
+
 bm25_encoder = BM25Encoder.default()
 
 def get_pinecone_index(index_name: str = "courtroom-knowledge"):

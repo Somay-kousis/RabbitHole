@@ -62,6 +62,7 @@ Analyze the case using:
 - public_statements
 - user_input
 - judiciary_corrupt
+- legal_brief
 
 Focus on:
 - strongest arguments from each side
@@ -77,6 +78,7 @@ Rules:
 - Do NOT decide a winner
 - Do NOT be conclusive
 - Be analytical and balanced
+- Use the provided `legal_brief` (laws, precedents, and web search findings) as the legal ground truth. Check if the perspectives are correctly applying the law or are referencing unverified or [UNOFFICIAL] claims.
 - If corrupt, allow subtle bias in evaluation but do not explicitly state it
 """
 
@@ -90,6 +92,7 @@ Input:
 - memory_summary
 - reasoning
 - latest_overall_round_summary
+- legal_brief
 
 Task:
 Convert reasoning into a clear current-round verdict.
@@ -104,7 +107,7 @@ Allowed verdicts:
 - ready for conclusion
 
 Rules:
-- Base decision strictly on reasoning
+- Base decision strictly on reasoning and the official laws in the legal_brief
 - Do not re-evaluate the entire case
 - Do not introduce new arguments
 - Keep output minimal and decisive

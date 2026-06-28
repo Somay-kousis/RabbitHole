@@ -99,6 +99,9 @@ def judiciary_node(state: CourtroomState):
     if turn_count < 1:
         return {}
 
+    final_docs = state.get("final_docs") or []
+    legal_brief = final_docs[0].page_content if final_docs else "No specific legal documents or web search findings retrieved."
+
     reason_result = reason_chain.invoke({
         "judiciary_type": judiciary_type,
         "memory_summary": memory_summary_text,
@@ -109,19 +112,22 @@ def judiciary_node(state: CourtroomState):
         "public_statements": public_statements,
         "user_input": state["user_input"],
         "judiciary_corrupt": state["judiciary_corrupt"],
+        "legal_brief": legal_brief,
     })
 
     verdict_result = verdict_chain.invoke({
-    "judiciary_type": judiciary_type,
-    "memory_summary": memory_summary_text,
-    "latest_overall_round_summary": state.get(
-        "latest_overall_round_summary",
-        "No previous courtroom round summary yet.",
-    ),
-    "public_statements": public_statements,
-    "user_input": state["user_input"],
-    "judiciary_corrupt": state["judiciary_corrupt"],
-})
+        "judiciary_type": judiciary_type,
+        "memory_summary": memory_summary_text,
+        "reasoning": reason_result,
+        "latest_overall_round_summary": state.get(
+            "latest_overall_round_summary",
+            "No previous courtroom round summary yet.",
+        ),
+        "public_statements": public_statements,
+        "user_input": state["user_input"],
+        "judiciary_corrupt": state["judiciary_corrupt"],
+        "legal_brief": legal_brief,
+    })
 
 
     latest_round_summary_result = latest_round_summary_chain.invoke({
