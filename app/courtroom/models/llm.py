@@ -51,3 +51,13 @@ CONCLUSION_MODEL = ChatGroq(
     model="gemma2-9b-it",
     temperature=1
 )
+
+RETRIEVER_MODEL = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=1
+)
+
+RETRIVER_LITE_MODEL = ChatGroq(
+    model="gemma2-9b-it",
+    temperature=1
+)
