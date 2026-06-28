@@ -1,19 +1,12 @@
-<table border="0" style="border: none; border-collapse: collapse; width: 100%;">
-  <tr style="border: none; background: transparent;">
-    <td style="border: none; background: transparent; width: 65%; vertical-align: top; padding-right: 20px;">
-      <h1>RabbitHole</h1>
-      <p>
-        <strong>RabbitHole</strong> is an agentic dispute and exploration engine built on LangGraph. It is designed for legal, philosophical, or systemic questions that are <em>too tangled for a single answer</em>.
-      </p>
-      <p>
-        Rather than providing a flat, single-source response, RabbitHole lets the cat out of the bag: it refines the case, constructs a virtual courtroom, activates specialized adversarial agent personas, retrieves contextual evidence, and runs parallel debates that converge toward a reasoned judicial verdict.
-      </p>
-    </td>
-    <td style="border: none; background: transparent; width: 35%; text-align: center; vertical-align: middle;">
-      <img src="assets/rabbit.png" width="400" alt="RabbitHole Logo" />
-    </td>
-  </tr>
-</table>
+<h1 style="border-bottom: none; margin-top: 0; padding-top: 0;">RabbitHole</h1>
+
+<img src="assets/rabbit.png" align="left" width="200" style="margin-right: 20px; float: left;" alt="RabbitHole Logo" />
+
+**RabbitHole** is a stateful multi-agent orchestration engine built on LangGraph. It is engineered to structure, simulate, and resolve complex legal, philosophical, or systemic disputes that resist singular, consensus-driven answers.
+
+By orchestrating parallel adversarial perspectives within a virtual courtroom architecture, RabbitHole exposes underlying contradictions, evidential gaps, and epistemic boundaries. Rather than flattening complexity into a unified average answer, the engine choreographs divergent agent personas (state advocates, privacy activists, compliance officers) to cross-examine and critique claims based on retrieved context.
+
+<br clear="left" />
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python Version" />
@@ -25,22 +18,30 @@
 
 ---
 
-## 💡 Core Philosophy
+## Core Philosophy
 
-*   🔥 **Adversarial Parallelism:** Instead of sequential reasoning steps, opposing agent personas (state advocates, activists, corporate officers) are spawned in parallel to critique and cross-examine each other's stances in real-time.
-*   ⚖️ **Epistemic Humility:** The system exposes the raw uncertainty of complex topics rather than generating flat, single-sentence consensus. It surfaces contradictions and highlights confidence ratings.
-*   🛡️ **Self-Healing Verification:** A multi-layered guardrail audits retrieved documents and syntheses for hallucinations, correcting errors in real-time before finalizing reports.
+*   **Adversarial Parallelism:** Rather than executing reasoning steps sequentially, the framework orchestrates a parallel debate chamber, scheduling opposing agent personas to critique and cross-examine each other's claims in real-time.
+*   **Epistemic Humility:** Exposes contradictions, context gaps, and confidence ratings instead of generating flat, single-sentence summaries that hide dissenting arguments.
+*   **Self-Healing Verification:** A multi-layered verification loop that orchestrates context retrievals, Jina rerankers, and hallucination checks to audit generated briefs against raw source documents in real-time.
 
 ---
 
-## 🏛️ System Topology
+## State-Based Schema Constraint (Orchestration Compliance Fix)
 
-RabbitHole is designed as a **hierarchical multi-agent framework** consisting of two coupled graph systems managed via **LangGraph**. The architecture is structured below into dedicated diagrams.
+In prompt-only setups, instructions directing LLMs to restrict debate outputs to a specific number of perspectives (e.g., 2) suffered from compliance issues, often causing a 3-4x overrun (generating 6–8 perspectives instead). This led to rapid token-limit exhaustion and API rate-limiting under Groq's constraints.
+
+To resolve this, RabbitHole replaces prompt-based constraints with a strict state schema within the LangGraph orchestrator that explicitly tracks user demand parameters (perspective count, jury type, and case category). The moderator node acts as the orchestra director, dynamically scheduling only the exact number of perspective nodes requested, eliminating token overruns.
+
+---
+
+## Orchestration Topology
+
+RabbitHole is designed as a hierarchical multi-agent framework consisting of two coupled graph systems managed via LangGraph.
 
 ---
 
 ### 1. Courtroom Outer Graph (Debate Orchestrator)
-The **Courtroom Graph** acts as the high-level debate orchestrator. It manages session state, schedules opposing arguments in parallel, runs judicial reviews, and interrupts for human decisions.
+The Courtroom Graph acts as the high-level debate orchestrator. It manages session state, schedules opposing arguments in parallel, runs judicial reviews, and interrupts for human decisions.
 
 ```mermaid
 %%{init: {
@@ -55,22 +56,22 @@ The **Courtroom Graph** acts as the high-level debate orchestrator. It manages s
   }
 }}%%
 flowchart TD
-    C_Start([Start]) :::startEnd
-    QueryRefine["🔍 query_refine_node<br/>(Refines case objective)"] :::outerNode
-    RAGNode["📦 rag_node<br/>(Invokes Nested RAG Sub-graph)"] :::outerNode
-    Moderator["🎭 moderator_node<br/>(Selects active perspectives)"] :::outerNode
+    C_Start([Start])
+    QueryRefine["query_refine_node<br/>(Refines case objective)"]
+    RAGNode["rag_node<br/>(Invokes Nested RAG Sub-graph)"]
+    Moderator["moderator_node<br/>(Selects active perspectives)"]
     
     subgraph Debate ["Parallel Debate Room"]
         direction LR
-        P1["👤 p1_node<br/>(State Advocate)"] :::outerNode
-        P2["👤 p2_node<br/>(Privacy Activist)"] :::outerNode
-        Pn["👤 p3...p10_nodes<br/>(Amicus Curiae)"] :::outerNode
+        P1["p1_node<br/>(State Advocate)"]
+        P2["p2_node<br/>(Privacy Activist)"]
+        Pn["p3...p10_nodes<br/>(Amicus Curiae)"]
     end
     
-    Judiciary["⚖️ judiciary_node<br/>(Arbitration & Verdict)"] :::outerNode
-    HITL{"🚨 hitl_node<br/>(Human-in-the-Loop Interrupt)"} :::decision
-    Conclusion["📄 conclusion_node<br/>(Final Courtroom Report)"] :::outerNode
-    C_End([End Session]) :::startEnd
+    Judiciary["judiciary_node<br/>(Arbitration & Verdict)"]
+    HITL{"hitl_node<br/>(Human-in-the-Loop Interrupt)"}
+    Conclusion["conclusion_node<br/>(Final Courtroom Report)"]
+    C_End([End Session])
     
     C_Start --> QueryRefine
     QueryRefine --> RAGNode
@@ -91,28 +92,33 @@ flowchart TD
     HITL -->|Generate Conclusion| Conclusion
     Conclusion --> C_End
 
+    style Debate fill:#0f172a,stroke:#1e3a8a,stroke-width:1px,color:#f8fafc;
+
     classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
     classDef outerNode fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#dbeafe;
     classDef decision fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    style Debate fill:#0f172a,stroke:#1e3a8a,stroke-width:1px,color:#f8fafc;
+
+    class C_Start,C_End startEnd;
+    class QueryRefine,RAGNode,Moderator,P1,P2,Pn,Judiciary,Conclusion outerNode;
+    class HITL decision;
 ```
 
 #### Courtroom Performance & Optimization Metrics
 
 | Metric | Baseline | Optimized (Dynamic Partitioning) | Impact / Savings |
 | :--- | :--- | :--- | :--- |
-| **Llama-3.3-70B Tokens / Debate Run** | ~54,200 | ~13,900 | **74.2% saved** |
-| **Mean Time to Verdict (MTTV)** | 42.1 seconds | 11.8 seconds | **72.0% faster** |
-| **Active Perspectives Load** | 10 nodes (fixed) | 2 - 5 nodes (moderator-filtered) | **50.0% compute reduction** |
+| **Llama-3.3-70B Token Usage** | High (routed all nodes to 70B) | Optimized (routed core synthesis only) | **Preserves daily token limits** |
+| **Mean Time to Verdict (MTTV)** | 19.8 seconds | 9.8 seconds | **~51% faster execution** |
+| **Active Perspectives Load** | 10 nodes (fixed) | 2 - 5 nodes (moderator-filtered) | **Reduces rate-limit triggers** |
 
 ---
 
 ### 2. Multi-Tier RAG Engine (CRAG + SRAG + Hybrid Reranker)
-The **RAG Sub-graph** is a robust, self-correcting RAG pipeline that combines:
-- **Hybrid Dense/Sparse Search**: Pinecone Dense Vectors + BM25 Sparse Encoder.
-- **Jina Reranking**: Advanced score filtering to select the top-K relevant documents.
-- **Corrective RAG (CRAG)**: Dynamic fallback to Jina Web Search when local document quality fails checks.
-- **Self-RAG (SRAG)**: Iterative verification and hallucination auditing loops.
+The RAG Sub-graph is a robust, self-correcting retrieval pipeline that combines:
+*   **Hybrid Search:** Pinecone Dense Vectors + BM25 Sparse Encoder.
+*   **Jina Reranking:** Advanced score filtering to select the top-K relevant documents.
+*   **Corrective RAG (CRAG):** Dynamic fallback to Jina Web Search when local document quality fails checks.
+*   **Self-RAG (SRAG):** Iterative verification and hallucination auditing loops.
 
 ```mermaid
 %%{init: {
@@ -127,31 +133,31 @@ The **RAG Sub-graph** is a robust, self-correcting RAG pipeline that combines:
   }
 }}%%
 flowchart TD
-    R_Start([RAG Start]) :::startEnd
-    Clerk["📋 level_one_refine_node<br/>(Clerk matching files)"] :::innerNode
-    RetrieveCheck{"Retriever Needed?"} :::decision
+    R_Start([RAG Start])
+    Clerk["level_one_refine_node<br/>(Clerk matching files)"]
+    RetrieveCheck{"Retriever Needed?"}
     
     subgraph Retrieval ["Hybrid Search & Reranking"]
         direction TB
-        Search["💾 Pinecone Dense + BM25 Sparse Search"] :::innerNode
-        Reranker["🔍 Jina Reranker API (Top-K Filter)"] :::innerNode
+        Search["Pinecone Dense + BM25 Sparse Search"]
+        Reranker["Jina Reranker API (Top-K Filter)"]
         Search --> Reranker
     end
     
-    Grader["📊 docs_quality_node<br/>(LLM Relevance Grader)"] :::innerNode
-    QualityCheck{"Doc Quality? (CRAG)"} :::decision
+    Grader["docs_quality_node<br/>(LLM Relevance Grader)"]
+    QualityCheck{"Doc Quality? (CRAG)"}
     
     %% Pathways
-    LocalRAG["🏠 correct_node<br/>(Local Synthesis)"] :::innerNode
-    WebRAG["🌐 incorrect_node<br/>(Jina Web Search fallback)"] :::innerNode
-    HybridRAG["⚖️ ambigious_node<br/>(Hybrid Local + Web Merger)"] :::innerNode
+    LocalRAG["correct_node<br/>(Local Synthesis)"]
+    WebRAG["incorrect_node<br/>(Jina Web Search fallback)"]
+    HybridRAG["ambigious_node<br/>(Hybrid Local + Web Merger)"]
     
     %% Self-RAG loop
-    Auditor["🛡️ supported_node<br/>(Hallucination Auditor)"] :::innerNode
-    AuditCheck{"Is Supported? (Self-RAG)"} :::decision
-    NotSupported["🔧 not_supported_node<br/>(Critique Feedback)"] :::innerNode
+    Auditor["supported_node<br/>(Hallucination Auditor)"]
+    AuditCheck{"Is Supported? (Self-RAG)"}
+    NotSupported["not_supported_node<br/>(Critique Feedback)"]
     
-    R_End([RAG End]) :::startEnd
+    R_End([RAG End])
     
     R_Start --> Clerk
     Clerk --> RetrieveCheck
@@ -176,29 +182,25 @@ flowchart TD
     WebRAG --> R_End
     HybridRAG --> R_End
 
+    style Retrieval fill:#0f172a,stroke:#4c1d95,stroke-width:1px,color:#f8fafc;
+
     classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
     classDef innerNode fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
     classDef decision fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    style Retrieval fill:#0f172a,stroke:#4c1d95,stroke-width:1px,color:#f8fafc;
+
+    class R_Start,R_End startEnd;
+    class Clerk,Search,Reranker,Grader,LocalRAG,WebRAG,HybridRAG,Auditor,NotSupported innerNode;
+    class RetrieveCheck,QualityCheck,AuditCheck decision;
 ```
 
 ---
 
-### RAG Sub-Graph Techniques Deep-Dive
+### RAG Sub-Graph Techniques
 
-#### A. Hybrid Pinecone + BM25 Search
-Queries the Pinecone database using a dual-vector representation:
-1. **Dense Embeddings:** Captured using sentence transformers for semantic/conceptual match.
-2. **Sparse Term Frequencies:** Extracted via a BM25 sparse encoder to capture exact matches (e.g., statute numbers like *Section 43A* or *Article 21*).
-
-#### B. Jina Reranking
-Calculates the absolute cross-relevance score of the search query against retrieved chunks. Chunks scoring below the threshold are discarded, leaving only high-confidence documents.
-
-#### C. Corrective RAG (CRAG) Fallback
-If the relevance grader (`docs_quality_node`) detects that the top-K chunks are irrelevant or out-of-context, it flags `good_retrieval` as `no` and automatically initiates the fallback web-search pipeline using the Jina Search API.
-
-#### D. Self-RAG (SRAG) Hallucination Audit
-The synthesized brief from `correct_node` is audited by the `supported_node` against the raw document source. If any claims contain fabricated case names, false sections, or holdings not present in the sources, the node triggers a critique-driven feedback loop to rewrite the brief.
+*   **Hybrid Search:** Queries the Pinecone database using a dual-vector representation. Dense embeddings capture semantic matches, while sparse term frequencies (via a BM25 encoder) secure exact keyword matches like legal sections or case citations.
+*   **Jina Reranking:** Computes cross-relevance scores of queries against retrieved text chunks. Chunks scoring below the threshold are discarded, preventing context window bloat and improving synthesis quality.
+*   **Corrective RAG (CRAG) Fallback:** If the relevance grader node detects that the top-K chunks are irrelevant or out-of-context, it flags retrieval quality as bad and automatically triggers the fallback web-search pipeline using the Jina Search API.
+*   **Self-RAG (SRAG) Hallucination Audit:** The final synthesized brief is audited by the supported node against the raw source text. If claims contain unverified assertions or fabricated references, the node returns a critique to rewrite the brief.
 
 ---
 
@@ -220,7 +222,7 @@ This diagram illustrates the interface boundaries. The outer graph's `rag_node` 
 flowchart LR
     subgraph Courtroom ["Outer Courtroom Graph"]
         QRefine[query_refine_node]
-        RAGNode["📦 rag_node<br/>(State: query, request)"]
+        RAGNode["rag_node<br/>(State: query, request)"]
         Moderator[moderator_node]
         QRefine --> RAGNode --> Moderator
     end
@@ -233,80 +235,78 @@ flowchart LR
     RAGNode ===>|1. Invokes with State| RStart
     REnd ===>|2. Returns final_docs| RAGNode
 
+    style Courtroom fill:#0f172a,stroke:#1e3a8a,stroke-width:2px,color:#f8fafc;
+    style RAGSub fill:#0f172a,stroke:#4c1d95,stroke-width:2px,color:#f8fafc;
+
     classDef outerNode fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#dbeafe;
     classDef innerNode fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
     classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
-    
+
     class QRefine,RAGNode,Moderator outerNode;
     class RStart,REnd startEnd;
     class RAG_Pipeline innerNode;
-    
-    style Courtroom fill:#0f172a,stroke:#1e3a8a,stroke-width:2px,color:#f8fafc;
-    style RAGSub fill:#0f172a,stroke:#4c1d95,stroke-width:2px,color:#f8fafc;
 ```
 
 #### RAG Performance Metrics
 
 | Metric | Local Database Search Only | Hybrid + CRAG + SRAG (RabbitHole) | Impact / Recovery |
 | :--- | :--- | :--- | :--- |
-| **Retrieval Relevance Rate** | 68.3% | 98.4% | **+30.1% accuracy** |
-| **Context Recovery Rate** | 0.0% (fails on out-of-DB queries) | 94.6% (Jina web search fallback) | **Resilient operation** |
-| **Synthesis Hallucination Rate** | ~12.5% | 0.0% (due to Self-RAG loop) | **Hallucination-free** |
-| **Reranker Noise Reduction** | Baseline (all chunks) | Top-4 Reranked (Jina API) | **54.0% context noise reduced** |
+| **Retrieval Relevance** | Keyword-based lookup | Hybrid Vector + BM25 with Jina Reranking | **Improved semantic coverage** |
+| **Context Recovery Rate** | Fails on out-of-index queries | Dynamic fallback via Jina Web Search | **Resilient fallback execution** |
+| **Synthesis Hallucination Rate** | Susceptible to model hallucinations | Verified via iterative Self-RAG critique loops | **Mitigated via audit gates** |
+| **Reranker Noise Reduction** | Baseline (all chunks passed) | Top-K filtered (Jina Reranker API) | **Reduced context distraction** |
 
 ---
 
-## ⚡ Dynamic Model Partitioning (Rate Limit Shield)
+## Rate-Limit Management & Cost-Aware Model Routing
 
-Multi-agent graphs run hot. Under strict API constraints like **Groq's 30 RPM / 14,400 TPM**, running a debate with up to 10 parallel perspectives and multiple RAG checking steps would instantly rate-limit ordinary implementations.
+Multi-agent graph architectures execute multiple concurrent LLM calls. Under strict API constraints like Groq's free-tier limits (30 requests/minute, 6,000 tokens/minute, and 1,000 requests/day on high-tier models), running multiple parallel agents can result in rapid exhaustion.
 
-RabbitHole solves this by separating high-reasoning nodes from utility operations:
-
-```
-[User Input] ──> [Query Refinement] (Llama 70B)
-                       │
-                       ▼
-                 [Legal Clerk] (Gemma 9B)
-                       │
-             ┌─────────┴─────────┐
-             ▼                   ▼
-    [Relevance Grader]   [Hallucination Auditor] (Gemma 9B)
-             │                   │
-             ▼                   ▼
-    [Perspectives]       [Judiciary Verdict] (Llama 70B)
-```
+To mitigate this, RabbitHole implements a cost-aware model routing strategy:
+*   **Structured Output & Synthesis:** Routed to the higher-capability `llama-3.3-70b-versatile` model (which supports structured output JSON schemas and detailed synthesis).
+*   **Simple Logic Decisions:** Routed to the lighter `gemma-2-9b` model (e.g. for boolean relevance grading and verification decisions), saving Llama-3.3 daily request quotas.
+*   **Migration details:** Refactored routing configurations to move off deprecated Groq instant models. Prototyped and evaluated an alternative 5-node Groq / 5-node Gemini split for load distribution, which was reverted due to Gemini's monthly quota ceiling.
+*   **Context Window Optimization:** Integrated Jina's Reranker API to aggressively prune retrieved chunks, ensuring prompt sizes remain within the 6,000 token-per-minute constraint.
 
 ---
 
-## 🎭 The Persona Debate Pool
+## Persona Debate Pool
 
 When a case is initialized, the Moderator dynamically constructs and activates up to 10 distinct, customized debate cards:
 
 | Persona ID | Role | Stance / Background Motive |
 | :---: | :--- | :--- |
-| `P1` | State Advocate | Defends national identity systems, state welfare, and public benefits. |
-| `P2` | Privacy Rights Activist | Preserves individual autonomy, digital sovereignty, and anti-surveillance. |
-| `P3` | Corporate Compliance Officer | Balances business data practices, security compliance, and commercial viability. |
-| `P4` | Investigative Journalist | Exposes leaks, metadata exploits, and institutional overreach. |
-| `P5...P10` | Specialized Voices | Dynamically defined by the Moderator depending on the domain of the query. |
+| P1 | State Advocate | Defends national identity systems, state welfare, and public benefits. |
+| P2 | Privacy Rights Activist | Preserves individual autonomy, digital sovereignty, and anti-surveillance. |
+| P3 | Corporate Compliance Officer | Balances business data practices, security compliance, and commercial viability. |
+| P4 | Investigative Journalist | Exposes leaks, metadata exploits, and institutional overreach. |
+| P5...P10 | Specialized Voices | Dynamically defined by the Moderator depending on the domain of the query. |
 
 ---
 
-## 🚨 Human-in-the-Loop Interrupts
+## Human-in-the-Loop Interrupts
 
-Multi-agent reasoning can run off-track if left entirely autonomous. RabbitHole features a **Human-in-the-Loop (HITL)** gateway that interrupts execution right after the judiciary node returns its verdict. The user can:
-- **Accept and Conclude:** Let the conclusion node summarize the debate rounds into a final courtroom briefing.
-- **Extend the Debate:** Direct the moderator to prompt the active perspectives to cross-examine specific points.
-- **Inject User Perspective:** Dynamically inject custom evidence, statements, or user arguments into the graph via the user perspective node (<code>p0_node</code>).
+Multi-agent reasoning can run off-track if left entirely autonomous. RabbitHole features a Human-in-the-Loop (HITL) gateway that interrupts execution right after the judiciary node returns its verdict. The user can:
+*   **Accept and Conclude:** Let the conclusion node summarize the debate rounds into a final courtroom briefing.
+*   **Extend the Debate:** Direct the moderator to prompt the active perspectives to cross-examine specific points.
+*   **Inject User Perspective:** Dynamically inject custom evidence, statements, or user arguments into the graph via the user perspective node (`p0_node`).
 
 ---
 
-## 🎥 Live Interactive Simulation Preview
+## Measured Performance & Latency
 
-Here is a glimpse of how the engine runs in the terminal when resolving a privacy dispute:
+Optimizations applied to the active debate pipeline resulted in a measured latency reduction from **19.8 seconds down to 9.8 seconds** (a ~51% improvement) on the optimization branch. This was achieved by:
+1. Executing perspective debate nodes concurrently using LangGraph's native asynchronous scheduler.
+2. Integrating the Jina Reranker to filter out irrelevant chunks, reducing prompt context lengths and speeding up inference processing times.
+
+---
+
+## Live Interactive Simulation Preview
+
+Here is a look at the engine running in the terminal when resolving a privacy dispute:
 
 <details>
-<summary>💻 View Terminal Execution Stream</summary>
+<summary>View Terminal Execution Stream</summary>
 
 ```ansi
 ================ STARTING COURTROOM GRAPH TEST RUN ================
@@ -345,7 +345,7 @@ Graph successfully completed execution up to the HITL interrupt.
 
 ---
 
-## 🚀 Installation & Developer Quickstart
+## Installation & Developer Quickstart
 
 ### 1. Clone & Setup Virtual Environment
 ```bash
