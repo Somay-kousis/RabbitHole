@@ -1,0 +1,106 @@
+{
+    "laws": {
+        "family_gender": [
+            "hindu-marriage-act-1955",
+            "protection-of-women-from-domestic-violence-act-2005",
+            "sexual-harassment-of-women-at-workplace-prevention-prohibition-and-redressal-act-2013",
+            "special-marriage-act-1954"
+        ],
+        "environment_land": [
+            "air-prevention-and-control-of-pollution-act-1981",
+            "environment-protection-act-1986",
+            "water-prevention-and-control-of-pollution-act-1974",
+            "wild-life-protection-act-1972"
+        ],
+        "democracy_rights": [
+            "legal-services-authorities-act-1987",
+            "representation-of-people-act-1950",
+            "representation-of-people-act-1951"
+        ],
+        "commercial_corporate": [
+            "arbitration-and-conciliation-act-1996",
+            "companies-act-2013",
+            "competition-act-2002",
+            "consumer-protection-act-2019",
+            "insolvency-and-bankruptcy-code-2016"
+        ],
+        "contract_property": [
+            "indian-contract-act-1872",
+            "registration-act-1908",
+            "specific-relief-act-1963",
+            "transfer-of-property-act-1882"
+        ],
+        "education_ip": [
+            "copyright-act-1957",
+            "patents-act-1970",
+            "right-of-children-to-free-and-compulsory-education-act-2009",
+            "trade-marks-act-1999"
+        ],
+        "constitutional_admin": [
+            "administrative-tribunals-act-1985",
+            "right-to-information-act-2005"
+        ],
+        "tax_finance": [
+            "income-tax-act-1961"
+        ],
+        "civil_procedure_evidence": [
+            "bharatiya-sakshya-adhiniyam-2023",
+            "code-of-civil-procedure-1908",
+            "limitation-act-1963"
+        ],
+        "labor_service": [
+            "code-on-wages-2019",
+            "industrial-relations-code-2020"
+        ],
+        "technology_privacy": [
+            "aadhaar-targeted-delivery-of-financial-and-other-subsidies-benefits-and-services-act-2016",
+            "digital-personal-data-protection-act-2023",
+            "information-technology-act-2000"
+        ],
+        "criminal": [
+            "bharatiya-nagarik-suraksha-sanhita-2023",
+            "bharatiya-nyaya-sanhita-2023",
+            "juvenile-justice-care-and-protection-of-children-act-2015",
+            "protection-of-children-from-sexual-offences-act-2012"
+        ]
+    },
+    "cases": {
+        "family_gender": [
+            "navtej-singh-johar-v-union-of-india"
+        ],
+        "environment_land": [
+            "mc-mehta-v-union-of-india-oleum-gas-leak"
+        ],
+        "democracy_rights": [
+            "kesavananda-bharati-v-state-of-kerala"
+        ],
+        "commercial_corporate": [
+            "tata-consultancy-services-v-state-of-andhra-pradesh"
+        ],
+        "contract_property": [
+            "satyabrata-ghose-v-mugneeram-bangur-&-co"
+        ],
+        "education_ip": [
+            "novartis-v-union-of-india"
+        ],
+        "constitutional_admin": [
+            "s-r-bommai-v-union-of-india",
+            "t-s-r-subramanian-v-union-of-india"
+        ],
+        "tax_finance": [
+            "vodafone-international-holdings-bv-v-union-of-india"
+        ],
+        "civil_procedure_evidence": [
+            "salem-advocate-bar-association-tamil-nadu-v-union-of-india"
+        ],
+        "labor_service": [
+            "bangalore-water-supply-and-sewerage-board-v-a-rajappa"
+        ],
+        "technology_privacy": [
+            "justice-k-s-puttaswamy-retd-v-union-of-india"
+        ],
+        "criminal": [
+            "bachan-singh-v-state-of-punjab"
+        ]
+    }
+}
