@@ -168,3 +168,6 @@ yarn-error.log*
 ```
 # Added by Braintrust Wizard
 .braintrust.json
+
+# NLTK Data
+nltk_data/
