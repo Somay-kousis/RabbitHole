@@ -88,6 +88,9 @@ def perspective_node(state: CourtroomState, perspective_id: int):
     if not perspective or perspective.get("active") is not True:
         return {}
 
+    final_docs = state.get("final_docs") or []
+    legal_brief = final_docs[0].page_content if final_docs else "No specific legal documents or web search findings retrieved."
+
     if turn_count == 1:
         background_motives = perspective_chain.invoke({
             "id": perspective["id"],
@@ -97,6 +100,9 @@ def perspective_node(state: CourtroomState, perspective_id: int):
         statement_result = statement_chain.invoke({
             "role": perspective["role"],
             "background_motives": background_motives,
+            "memory_summary": "No memory yet.",
+            "latest_overall_round_summary": "No previous courtroom round summary yet.",
+            "legal_brief": legal_brief,
         })
 
         return {
@@ -123,6 +129,7 @@ def perspective_node(state: CourtroomState, perspective_id: int):
             "background_motives": background_motives,
             "memory_summary": existing_memory_summary,
             "latest_overall_round_summary": latest_overall_round_summary,
+            "legal_brief": legal_brief,
         })
 
         memory_result = memory_chain.invoke({
