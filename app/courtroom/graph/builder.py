@@ -20,6 +20,22 @@ from app.courtroom.nodes.perspective_node import (
     p10_node,
 )
 from app.courtroom.nodes.query_refine_node import query_refine_node
+from app.courtroom.rag.structure.graph.graph import graph as rag_graph
+
+compiled_rag = rag_graph.compile()
+
+def courtroom_rag_node(state: CourtroomState):
+    rag_result = compiled_rag.invoke({
+        "query": state["user_input"],
+        "turn": 0,
+        "why_loop": "",
+        "is_sup": False,
+        "good_retrieval": "yes",
+        "retriever_needed": True
+    })
+    return {
+        "final_docs": rag_result.get("final_docs", [])
+    }
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env", override=True)
@@ -53,6 +69,7 @@ def build_courtroom_graph():
 
     graph.add_node("moderator_node", moderator_node)
     graph.add_node("query_refine_node", query_refine_node)
+    graph.add_node("rag_node", courtroom_rag_node)
     graph.add_node("p1_node", p1_node)
     graph.add_node("p2_node", p2_node)
     graph.add_node("p3_node", p3_node)
@@ -68,7 +85,8 @@ def build_courtroom_graph():
     graph.add_node("conclusion_node", conclusion_node)
 
     graph.add_edge(START, "query_refine_node")
-    graph.add_edge("query_refine_node", "moderator_node")
+    graph.add_edge("query_refine_node", "rag_node")
+    graph.add_edge("rag_node", "moderator_node")
 
     graph.add_conditional_edges(
         "moderator_node",
