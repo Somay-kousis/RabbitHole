@@ -52,4 +52,5 @@ class CourtroomState(TypedDict):
     next_action: NotRequired[CourtAction]
 
     turn_count: int
+    final_docs: NotRequired[List]
 
