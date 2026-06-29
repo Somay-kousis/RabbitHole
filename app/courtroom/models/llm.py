@@ -108,13 +108,32 @@ def resolve_node_model(var_name: str, temperature: float = 1.0):
 
 # 4. Final Node Models Assignment
 MODERATOR_MODEL = resolve_node_model("MODERATOR")
-PERSPECTIVE_MODEL = resolve_node_model("PERSPECTIVE")
 SESSION_MODEL = resolve_node_model("SESSION")
 JUDICIARY_MODEL = resolve_node_model("JUDICIARY")
 RETRIEVER_MODEL = resolve_node_model("RETRIEVER")
 QUERYREFINE_MODEL = resolve_node_model("QUERYREFINE")
 
-PERSPECTIVE_LITE_MODEL = resolve_node_model("PERSPECTIVE_LITE")
+# Even Perspectives: Defaults to Cerebras (Llama 3.1 70B & 8B)
+PERSPECTIVE_MODEL_EVEN = resolve_node_model("PERSPECTIVE_MODEL_EVEN")
+PERSPECTIVE_LITE_MODEL_EVEN = resolve_node_model("PERSPECTIVE_LITE_MODEL_EVEN")
+
+# Odd Perspectives: Defaults to Google (Gemini 1.5 Flash) & OpenRouter/HuggingFace
+# We explicitly override the defaults if no .env overrides exist:
+odd_heavy_prov = "google" if os.environ.get("GOOGLE_API_KEY") else def_heavy_prov
+odd_heavy_model = "gemini-1.5-flash" if os.environ.get("GOOGLE_API_KEY") else def_heavy_mod
+
+odd_lite_prov = "openrouter" if os.environ.get("OPENROUTER_API_KEY") else ("huggingface" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")) else def_lite_prov)
+odd_lite_model = "google/gemma-2-9b-it:free" if os.environ.get("OPENROUTER_API_KEY") else ("meta-llama/Llama-3.2-3B-Instruct" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")) else def_lite_mod)
+
+PERSPECTIVE_MODEL_ODD = create_llm(
+    os.environ.get("PERSPECTIVE_MODEL_ODD_PROVIDER") or odd_heavy_prov,
+    os.environ.get("PERSPECTIVE_MODEL_ODD_MODEL") or odd_heavy_model
+)
+PERSPECTIVE_LITE_MODEL_ODD = create_llm(
+    os.environ.get("PERSPECTIVE_LITE_MODEL_ODD_PROVIDER") or odd_lite_prov,
+    os.environ.get("PERSPECTIVE_LITE_MODEL_ODD_MODEL") or odd_lite_model
+)
+
 JUDICIARY_LITE_MODEL = resolve_node_model("JUDICIARY_LITE")
 QUERYREFINE_LITE_MODEL = resolve_node_model("QUERYREFINE_LITE")
 CONCLUSION_MODEL = resolve_node_model("CONCLUSION")
