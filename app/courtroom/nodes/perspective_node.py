@@ -1,7 +1,12 @@
 from pydantic import BaseModel
 
 from app.courtroom.graph.state import CourtroomState
-from app.courtroom.models.llm import PERSPECTIVE_MODEL, PERSPECTIVE_LITE_MODEL
+from app.courtroom.models.llm import (
+    PERSPECTIVE_MODEL_EVEN,
+    PERSPECTIVE_LITE_MODEL_EVEN,
+    PERSPECTIVE_MODEL_ODD,
+    PERSPECTIVE_LITE_MODEL_ODD,
+)
 from langchain_core.prompts import ChatPromptTemplate
 from app.courtroom.prompts.perspective_prompt import (
     PERSPECTIVE_BACKGROUND,
@@ -17,30 +22,30 @@ class StatementOutput(BaseModel):
     public_statement: str
 
 
-from langchain_core.prompts import ChatPromptTemplate
+def get_perspective_chains(perspective_id: int):
+    # Alternating model endpoints to prevent concurrent rate limits in parallel execution
+    if perspective_id % 2 == 0:
+        model = PERSPECTIVE_MODEL_EVEN
+        lite_model = PERSPECTIVE_LITE_MODEL_EVEN
+    else:
+        model = PERSPECTIVE_MODEL_ODD
+        lite_model = PERSPECTIVE_LITE_MODEL_ODD
 
-perspective_chain = (
-    ChatPromptTemplate.from_messages(
-        [("system", PERSPECTIVE_BACKGROUND)]
+    p_chain = (
+        ChatPromptTemplate.from_messages([("system", PERSPECTIVE_BACKGROUND)])
+        | lite_model
+        | StrOutputParser()
     )
-    | PERSPECTIVE_LITE_MODEL
-    | StrOutputParser()
-)
-
-statement_chain = (
-    ChatPromptTemplate.from_messages(
-        [("system", PUBLIC_PRIVATE_STATEMENT)]
+    s_chain = (
+        ChatPromptTemplate.from_messages([("system", PUBLIC_PRIVATE_STATEMENT)])
+        | model.with_structured_output(StatementOutput)
     )
-    | PERSPECTIVE_MODEL.with_structured_output(StatementOutput)
-)
-
-memory_chain = (
-    ChatPromptTemplate.from_messages(
-        [("system", MEMORY_GENERATION)]
+    m_chain = (
+        ChatPromptTemplate.from_messages([("system", MEMORY_GENERATION)])
+        | model
+        | StrOutputParser()
     )
-    | PERSPECTIVE_MODEL
-    | StrOutputParser()
-)
+    return p_chain, s_chain, m_chain
 
 
 def get_perspective(state: CourtroomState, perspective_id: int):
@@ -91,13 +96,15 @@ def perspective_node(state: CourtroomState, perspective_id: int):
     final_docs = state.get("final_docs") or []
     legal_brief = final_docs[0].page_content if final_docs else "No specific legal documents or web search findings retrieved."
 
+    p_chain, s_chain, m_chain = get_perspective_chains(perspective_id)
+
     if turn_count == 1:
-        background_motives = perspective_chain.invoke({
+        background_motives = p_chain.invoke({
             "id": perspective["id"],
             "role": perspective["role"],
         })
 
-        statement_result = statement_chain.invoke({
+        statement_result = s_chain.invoke({
             "role": perspective["role"],
             "background_motives": background_motives,
             "memory_summary": "No memory yet.",
@@ -124,7 +131,7 @@ def perspective_node(state: CourtroomState, perspective_id: int):
             "No previous courtroom round summary yet."
         )
 
-        statement_result = statement_chain.invoke({
+        statement_result = s_chain.invoke({
             "role": perspective["role"],
             "background_motives": background_motives,
             "memory_summary": existing_memory_summary,
@@ -132,7 +139,7 @@ def perspective_node(state: CourtroomState, perspective_id: int):
             "legal_brief": legal_brief,
         })
 
-        memory_result = memory_chain.invoke({
+        memory_result = m_chain.invoke({
             "role": perspective["role"],
             "background_motives": background_motives,
             "existing_memory_summary": existing_memory_summary,
