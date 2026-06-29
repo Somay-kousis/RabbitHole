@@ -59,7 +59,6 @@ def get_default_heavy_provider():
     elif os.environ.get("GROQ_API_KEY"):
         return "groq", "llama-3.3-70b-versatile"
     elif os.environ.get("GOOGLE_API_KEY"):
-        # Flash has a 1,500 RPD free tier limit compared to Pro's 50 RPD
         return "google", "gemini-1.5-flash"
     elif os.environ.get("OPENROUTER_API_KEY"):
         return "openrouter", "meta-llama/llama-3.3-70b-instruct"
@@ -86,56 +85,154 @@ def get_default_lite_provider():
 def_heavy_prov, def_heavy_mod = get_default_heavy_provider()
 def_lite_prov, def_lite_mod = get_default_lite_provider()
 
-# 3. Dynamic Node Resolver Function
-def resolve_node_model(var_name: str, temperature: float = 1.0):
-    # Check for direct granular settings in .env (e.g. MODERATOR_PROVIDER / MODERATOR_MODEL)
-    provider = os.environ.get(f"{var_name}_PROVIDER")
-    model = os.environ.get(f"{var_name}_MODEL")
-    
-    # Determine Tier (LITE or HEAVY)
-    is_lite = "LITE" in var_name or var_name in ["CONCLUSION", "RETRIVER_LITE"]
-    
-    if is_lite:
-        tier_provider = os.environ.get("LITE_PROVIDER") or def_lite_prov
-        tier_model = os.environ.get("LITE_MODEL") or def_lite_mod
-    else:
-        tier_provider = os.environ.get("HEAVY_PROVIDER") or def_heavy_prov
-        tier_model = os.environ.get("HEAVY_MODEL") or def_heavy_mod
+# 3. Fallback Wrapper Chat Model
+class FallbackChatModel:
+    """
+    Wraps a list of LLM clients. If the primary client fails (e.g. 429 Rate Limit),
+    it automatically falls back to the next model in the list.
+    Supports structured output recursively across all fallback models.
+    """
+    def __init__(self, models):
+        self.models = models
+
+    def with_structured_output(self, schema, **kwargs):
+        structured_models = [m.with_structured_output(schema, **kwargs) for m in self.models]
+        if len(structured_models) == 1:
+            return structured_models[0]
+        return structured_models[0].with_fallbacks(structured_models[1:])
+
+    def invoke(self, *args, **kwargs):
+        if len(self.models) == 1:
+            return self.models[0].invoke(*args, **kwargs)
+        runnable = self.models[0].with_fallbacks(self.models[1:])
+        return runnable.invoke(*args, **kwargs)
+
+    def stream(self, *args, **kwargs):
+        if len(self.models) == 1:
+            return self.models[0].stream(*args, **kwargs)
+        runnable = self.models[0].with_fallbacks(self.models[1:])
+        return runnable.stream(*args, **kwargs)
+
+    def batch(self, *args, **kwargs):
+        if len(self.models) == 1:
+            return self.models[0].batch(*args, **kwargs)
+        runnable = self.models[0].with_fallbacks(self.models[1:])
+        return runnable.batch(*args, **kwargs)
+
+def build_fallback_chain(providers_and_models, temperature: float = 1.0):
+    models = []
+    for provider, model_name in providers_and_models:
+        has_key = False
+        if provider == "groq" and os.environ.get("GROQ_API_KEY"):
+            has_key = True
+        elif (provider in ["google", "gemini"]) and os.environ.get("GOOGLE_API_KEY"):
+            has_key = True
+        elif provider == "cerebras" and os.environ.get("CEREBRAS_API_KEY"):
+            has_key = True
+        elif provider == "openrouter" and os.environ.get("OPENROUTER_API_KEY"):
+            has_key = True
+        elif provider == "huggingface" and (os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")):
+            has_key = True
+            
+        if has_key:
+            try:
+                models.append(create_llm(provider, model_name, temperature))
+            except Exception:
+                pass
+                
+    if not models:
+        # Emergency fallback if no keys configured
+        models.append(create_llm(def_lite_prov, def_lite_mod, temperature))
         
-    final_provider = provider or tier_provider
-    final_model = model or tier_model
-    
-    return create_llm(final_provider, final_model, temperature)
+    return FallbackChatModel(models)
 
-# 4. Final Node Models Assignment
-MODERATOR_MODEL = resolve_node_model("MODERATOR")
-SESSION_MODEL = resolve_node_model("SESSION")
-JUDICIARY_MODEL = resolve_node_model("JUDICIARY")
-RETRIEVER_MODEL = resolve_node_model("RETRIEVER")
-QUERYREFINE_MODEL = resolve_node_model("QUERYREFINE")
+# 4. Final Fallback Model Chain Definitions
+# Order: Low-limit free models first -> Medium limit -> OG models with massive limits at the bottom
+MODERATOR_MODEL = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-70b"),
+    ("groq", "llama-3.3-70b-versatile")
+])
 
-# Even Perspectives: Defaults to Cerebras (Llama 3.1 70B & 8B)
-PERSPECTIVE_MODEL_EVEN = resolve_node_model("PERSPECTIVE_MODEL_EVEN")
-PERSPECTIVE_LITE_MODEL_EVEN = resolve_node_model("PERSPECTIVE_LITE_MODEL_EVEN")
+SESSION_MODEL = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-70b"),
+    ("groq", "llama-3.3-70b-versatile")
+])
 
-# Odd Perspectives: Defaults to Google (Gemini 1.5 Flash) & OpenRouter/HuggingFace
-# We explicitly override the defaults if no .env overrides exist:
-odd_heavy_prov = "google" if os.environ.get("GOOGLE_API_KEY") else def_heavy_prov
-odd_heavy_model = "gemini-1.5-flash" if os.environ.get("GOOGLE_API_KEY") else def_heavy_mod
+JUDICIARY_MODEL = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("groq", "llama-3.3-70b-versatile"),
+    ("cerebras", "llama3.1-70b")
+])
 
-odd_lite_prov = "openrouter" if os.environ.get("OPENROUTER_API_KEY") else ("huggingface" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")) else def_lite_prov)
-odd_lite_model = "google/gemma-2-9b-it:free" if os.environ.get("OPENROUTER_API_KEY") else ("meta-llama/Llama-3.2-3B-Instruct" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")) else def_lite_mod)
+RETRIEVER_MODEL = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("groq", "llama-3.3-70b-versatile"),
+    ("cerebras", "llama3.1-70b")
+])
 
-PERSPECTIVE_MODEL_ODD = create_llm(
-    os.environ.get("PERSPECTIVE_MODEL_ODD_PROVIDER") or odd_heavy_prov,
-    os.environ.get("PERSPECTIVE_MODEL_ODD_MODEL") or odd_heavy_model
-)
-PERSPECTIVE_LITE_MODEL_ODD = create_llm(
-    os.environ.get("PERSPECTIVE_LITE_MODEL_ODD_PROVIDER") or odd_lite_prov,
-    os.environ.get("PERSPECTIVE_LITE_MODEL_ODD_MODEL") or odd_lite_model
-)
+QUERYREFINE_MODEL = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-70b"),
+    ("groq", "llama-3.3-70b-versatile")
+])
 
-JUDICIARY_LITE_MODEL = resolve_node_model("JUDICIARY_LITE")
-QUERYREFINE_LITE_MODEL = resolve_node_model("QUERYREFINE_LITE")
-CONCLUSION_MODEL = resolve_node_model("CONCLUSION")
-RETRIVER_LITE_MODEL = resolve_node_model("RETRIVER_LITE")
+# Even Perspectives: Start on OpenRouter free -> Fallback HF -> Fallback Gemini -> Fallback Cerebras
+PERSPECTIVE_MODEL_EVEN = build_fallback_chain([
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-70b")
+])
+PERSPECTIVE_LITE_MODEL_EVEN = build_fallback_chain([
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
+
+# Odd Perspectives: Start on Hugging Face -> Fallback OpenRouter -> Fallback Gemini -> Fallback Cerebras
+PERSPECTIVE_MODEL_ODD = build_fallback_chain([
+    ("google", "gemini-1.5-flash"),
+    ("openrouter", "qwen/qwen-2.5-72b-instruct:free"),
+    ("cerebras", "llama3.1-70b")
+])
+PERSPECTIVE_LITE_MODEL_ODD = build_fallback_chain([
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
+
+JUDICIARY_LITE_MODEL = build_fallback_chain([
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
+
+QUERYREFINE_LITE_MODEL = build_fallback_chain([
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
+
+CONCLUSION_MODEL = build_fallback_chain([
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
+
+RETRIVER_LITE_MODEL = build_fallback_chain([
+    ("openrouter", "google/gemma-2-9b-it:free"),
+    ("huggingface", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("google", "gemini-1.5-flash"),
+    ("cerebras", "llama3.1-8b")
+])
