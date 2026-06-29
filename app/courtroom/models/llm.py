@@ -54,12 +54,13 @@ def create_llm(provider: str, model_name: str, temperature: float = 1.0):
 
 # 2. Smart Fallback Determinations (when .env configurations are absent)
 def get_default_heavy_provider():
-    if os.environ.get("GROQ_API_KEY"):
+    if os.environ.get("CEREBRAS_API_KEY"):
+        return "cerebras", "llama3.1-70b"
+    elif os.environ.get("GROQ_API_KEY"):
         return "groq", "llama-3.3-70b-versatile"
     elif os.environ.get("GOOGLE_API_KEY"):
-        return "google", "gemini-1.5-pro"
-    elif os.environ.get("CEREBRAS_API_KEY"):
-        return "cerebras", "llama3.1-70b"
+        # Flash has a 1,500 RPD free tier limit compared to Pro's 50 RPD
+        return "google", "gemini-1.5-flash"
     elif os.environ.get("OPENROUTER_API_KEY"):
         return "openrouter", "meta-llama/llama-3.3-70b-instruct"
     elif os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY"):
@@ -70,14 +71,14 @@ def get_default_heavy_provider():
 def get_default_lite_provider():
     if os.environ.get("CEREBRAS_API_KEY"):
         return "cerebras", "llama3.1-8b"
-    elif os.environ.get("OPENROUTER_API_KEY"):
-        return "openrouter", "google/gemma-2-9b-it:free"
-    elif os.environ.get("GROQ_API_KEY"):
-        return "groq", "llama-3.1-8b-instant"
     elif os.environ.get("GOOGLE_API_KEY"):
         return "google", "gemini-1.5-flash"
+    elif os.environ.get("OPENROUTER_API_KEY"):
+        return "openrouter", "google/gemma-2-9b-it:free"
     elif os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY"):
         return "huggingface", "meta-llama/Llama-3.2-3B-Instruct"
+    elif os.environ.get("GROQ_API_KEY"):
+        return "groq", "llama-3.3-70b-versatile"
     else:
         raise ValueError("No API keys found in environment variables to configure lite LLM.")
 
