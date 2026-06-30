@@ -92,11 +92,11 @@ flowchart TD
     HITL -->|Generate Conclusion| Conclusion
     Conclusion --> C_End
 
-    style Debate fill:#0f172a,stroke:#1e3a8a,stroke-width:1px,color:#f8fafc;
+    style Debate fill:#0d1117,stroke:#4f46e5,stroke-dasharray: 5 5,stroke-width:1.5px,color:#f8fafc;
 
-    classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
-    classDef outerNode fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#dbeafe;
-    classDef decision fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
+    classDef outerNode fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
+    classDef decision fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
 
     class C_Start,C_End startEnd;
     class QueryRefine,RAGNode,Moderator,P1,P2,Pn,Judiciary,Conclusion outerNode;
@@ -182,11 +182,11 @@ flowchart TD
     WebRAG --> R_End
     HybridRAG --> R_End
 
-    style Retrieval fill:#0f172a,stroke:#4c1d95,stroke-width:1px,color:#f8fafc;
+    style Retrieval fill:#0d1117,stroke:#8b5cf6,stroke-dasharray: 5 5,stroke-width:1.5px,color:#f8fafc;
 
-    classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
-    classDef innerNode fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
-    classDef decision fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
+    classDef innerNode fill:#241442,stroke:#8b5cf6,stroke-width:1.5px,color:#ddd6fe;
+    classDef decision fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
 
     class R_Start,R_End startEnd;
     class Clerk,Search,Reranker,Grader,LocalRAG,WebRAG,HybridRAG,Auditor,NotSupported innerNode;
@@ -235,12 +235,12 @@ flowchart LR
     RAGNode ===>|1. Invokes with State| RStart
     REnd ===>|2. Returns final_docs| RAGNode
 
-    style Courtroom fill:#0f172a,stroke:#1e3a8a,stroke-width:2px,color:#f8fafc;
-    style RAGSub fill:#0f172a,stroke:#4c1d95,stroke-width:2px,color:#f8fafc;
+    style Courtroom fill:#0d1117,stroke:#4f46e5,stroke-width:1.5px,color:#f8fafc;
+    style RAGSub fill:#0d1117,stroke:#8b5cf6,stroke-width:1.5px,color:#f8fafc;
 
-    classDef outerNode fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#dbeafe;
-    classDef innerNode fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
-    classDef startEnd fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
+    classDef outerNode fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
+    classDef innerNode fill:#241442,stroke:#8b5cf6,stroke-width:1.5px,color:#ddd6fe;
+    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
 
     class QRefine,RAGNode,Moderator outerNode;
     class RStart,REnd startEnd;
@@ -262,11 +262,73 @@ flowchart LR
 
 Multi-agent graph architectures execute multiple concurrent LLM calls. Under strict API constraints like Groq's free-tier limits (30 requests/minute, 6,000 tokens/minute, and 1,000 requests/day on high-tier models), running multiple parallel agents can result in rapid exhaustion.
 
-To mitigate this, RabbitHole implements a cost-aware model routing strategy:
-*   **Structured Output & Synthesis:** Routed to the higher-capability `llama-3.3-70b-versatile` model (which supports structured output JSON schemas and detailed synthesis).
-*   **Simple Logic Decisions:** Routed to the lighter `gemma-2-9b` model (e.g. for boolean relevance grading and verification decisions), saving Llama-3.3 daily request quotas.
-*   **Migration details:** Refactored routing configurations to move off deprecated Groq instant models. Prototyped and evaluated an alternative 5-node Groq / 5-node Gemini split for load distribution, which was reverted due to Gemini's monthly quota ceiling.
-*   **Context Window Optimization:** Integrated Jina's Reranker API to aggressively prune retrieved chunks, ensuring prompt sizes remain within the 6,000 token-per-minute constraint.
+To mitigate this, RabbitHole implements a cost-aware model routing and a **dynamic, resilient multi-provider LLM selection framework**:
+
+### 1. Multi-Provider Fallback & Dynamic Routing
+Rather than hardcoding a single LLM provider, RabbitHole dynamically inspects configured API keys in `.env` (checking Cerebras, Groq, Google/Gemini, OpenRouter, and HuggingFace) to auto-resolve optimal primary, secondary, and tertiary providers for both heavy (`70b+`) and lite (`8b-`) tasks.
+
+### 2. Auto-Healing Rate Limits (429s) via `FallbackChatModel`
+To guarantee execution continuity during high-concurrency debate steps, the engine wraps model chains in a recursive `FallbackChatModel`. If a provider returns a rate limit (HTTP 429) or connection error, the model wrapper catches the failure and seamlessly routes the call to the next available provider (e.g., failing over from Cerebras to Groq, then to Gemini) without interrupting the graph state.
+
+```mermaid
+%%{init: {
+  'theme': 'dark',
+  'themeVariables': {
+    'background': '#0b0f19',
+    'primaryColor': '#1e293b',
+    'primaryTextColor': '#f8fafc',
+    'lineColor': '#10b981',
+    'nodeBorder': '#334155',
+    'tertiaryColor': '#0f172a'
+  }
+}}%%
+flowchart TD
+    APIKeys["Check .env API Keys<br/>(Cerebras, Groq, Gemini, OpenRouter, HF)"]
+    Resolve["Auto-Resolve Provider Lists<br/>(Primary, Secondary, Tertiary fallback tiers)"]
+    Request["Graph Node invokes LLM Call"]
+    
+    subgraph FailoverLoop ["Resilient Fallback Loop (FallbackChatModel)"]
+        TryPrimary["Try Primary Provider"]
+        CheckSuccess{"Success?"}
+        TrySecondary["Failover: Try Secondary Provider"]
+        CheckSuccess2{"Success?"}
+        TryTertiary["Failover: Try Tertiary Provider"]
+        SuccessNode["Return Output to Graph Node"]
+        FailNode["Raise Critical Error"]
+    end
+    
+    APIKeys --> Resolve
+    Resolve --> Request
+    Request --> TryPrimary
+    
+    TryPrimary --> CheckSuccess
+    CheckSuccess -->|Yes| SuccessNode
+    CheckSuccess -->|"No (429 / connection error)"| TrySecondary
+    
+    TrySecondary --> CheckSuccess2
+    CheckSuccess2 -->|Yes| SuccessNode
+    CheckSuccess2 -->|No| TryTertiary
+    
+    TryTertiary -->|Yes| SuccessNode
+    TryTertiary -->|No / Exhausted| FailNode
+
+    style FailoverLoop fill:#0d1117,stroke:#059669,stroke-width:1.5px,color:#f8fafc;
+
+    classDef step fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
+    classDef check fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
+    classDef error fill:#4c0519,stroke:#ef4444,stroke-width:1.5px,color:#fca5a5;
+    classDef success fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
+
+    class APIKeys,Resolve,Request,TryPrimary,TrySecondary,TryTertiary step;
+    class CheckSuccess,CheckSuccess2 check;
+    class FailNode error;
+    class SuccessNode success;
+```
+
+### 3. Cost-Aware Model Splitting
+*   **Structured Output & Synthesis:** Routed to high-capability models like `llama-3.3-70b` or `gemini-1.5-pro` (which support structured output schemas and detailed synthesis).
+*   **Simple Logic Decisions:** Routed to lighter models like `llama-3.1-8b` or `gemini-1.5-flash` (e.g., for boolean relevance grading and verification loops), saving high-tier request quotas.
+*   **Context Window Optimization:** Integrated Jina's Reranker API to aggressively prune retrieved chunks, ensuring prompt sizes remain within token-per-minute constraints.
 
 ---
 
