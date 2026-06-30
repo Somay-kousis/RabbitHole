@@ -1,0 +1,14 @@
+{
+  "92763d3a-6625-490c-96b8-d27c94ced05b": {
+    "user_input": "Case: Bachan Singh v. State of Punjab. Topic: Rarest of rare doctrine for death penalty.",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "user_commands": {
+      "number_of_perspectives": 4,
+      "judiciary_type": "neutral",
+      "specific_roles": [
+        "criminal"
+      ]
+    }
+  }
+}

@@ -109,5 +109,11 @@ def build_courtroom_graph():
     return graph
 
 
+from langgraph.checkpoint.memory import MemorySaver
+
 courtroom_graph = build_courtroom_graph()
-courtroom_app = courtroom_graph.compile(interrupt_before=["hitl_node"])
+courtroom_app = courtroom_graph.compile(
+    checkpointer=MemorySaver(),
+    interrupt_before=["hitl_node"]
+)
+
