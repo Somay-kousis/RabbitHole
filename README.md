@@ -181,6 +181,7 @@ flowchart TD
     
     WebRAG --> R_End
     HybridRAG --> R_End
+    HybridRAG -- "Internal verification loop (up to 5x)" --> HybridRAG
 
     style Retrieval fill:#0d1117,stroke:#8b5cf6,stroke-dasharray: 5 5,stroke-width:1.5px,color:#f8fafc;
 
@@ -199,8 +200,9 @@ flowchart TD
 
 *   **Hybrid Search:** Queries the Pinecone database using a dual-vector representation. Dense embeddings capture semantic matches, while sparse term frequencies (via a BM25 encoder) secure exact keyword matches like legal sections or case citations.
 *   **Jina Reranking:** Computes cross-relevance scores of queries against retrieved text chunks. Chunks scoring below the threshold are discarded, preventing context window bloat and improving synthesis quality.
-*   **Corrective RAG (CRAG) Fallback:** If the relevance grader node detects that the top-K chunks are irrelevant or out-of-context, it flags retrieval quality as bad and automatically triggers the fallback web-search pipeline using the Jina Search API.
-*   **Self-RAG (SRAG) Hallucination Audit:** The final synthesized brief is audited by the supported node against the raw source text. If claims contain unverified assertions or fabricated references, the node returns a critique to rewrite the brief.
+*   **Corrective RAG (CRAG) Fallback:** If the relevance grader detects that the retrieved chunks are irrelevant (mostly bad docs), it dynamically triggers the fallback web-search pipeline via Jina Search. If the retrieval is mixed (ambiguous docs), it executes the hybrid local + web path in parallel.
+*   **Self-RAG (SRAG) Hallucination Audit:** The synthesized legal briefs (both in the standard local path and the local branch of the hybrid path) are audited against the raw source text. If claims contain unverified assertions or fabricated references, the pipeline initiates a self-correction feedback loop (up to 5 attempts) using LLM critiques. If verification fails after 5 turns, claims are segregated using `[OFFICIAL]` and `[UNOFFICIAL]` tags.
+*   **Parallel Hybrid Merger:** In the ambiguous path, local documents and web results are retrieved and synthesized in parallel (with the local branch undergoing the self-correcting verification loop first). The results are then merged, tagging verified database facts as `[OFFICIAL]` and web-retrieved facts with their respective source domain tags as `[UNOFFICIAL]`.
 
 ---
 

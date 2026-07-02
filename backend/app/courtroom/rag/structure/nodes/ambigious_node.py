@@ -11,6 +11,8 @@ from app.courtroom.graph.state import CourtroomState
 from app.courtroom.rag.structure.function.decompose import decompose
 from app.courtroom.rag.structure.function.filter import filter_docs
 from app.courtroom.rag.structure.function.recompose import recompose
+from app.courtroom.rag.structure.nodes.supported_node import support_chain
+from app.courtroom.rag.structure.nodes.partial_supported_node import partial_chain
 
 # Import web pipeline functions
 from app.courtroom.rag.structure.function.rewrite_query import rewrite_query
@@ -48,8 +50,49 @@ def ambigious_node(state: RagState):
     print("\n[Ambiguous: Local Branch] Executing local document RAG...")
     decomposed_local = decompose(state)
     filtered_local = filter_docs(decomposed_local, state)
-    local_brief_docs = recompose(filtered_local, state)
-    local_brief = local_brief_docs[0].page_content if local_brief_docs else "No local legal context found."
+    
+    # Run the self-correction loop up to 5 times for the local brief
+    local_state = dict(state)
+    local_state["turn"] = 0
+    local_state["why_loop"] = ""
+    local_state["is_sup"] = False
+    
+    docs_text = "\n\n---\n\n".join([doc.page_content for doc in filtered_local]) if filtered_local else ""
+    local_brief_docs = []
+    
+    while local_state["turn"] < 5:
+        local_brief_docs = recompose(filtered_local, local_state)
+        if not local_brief_docs:
+            break
+            
+        summary_text = local_brief_docs[0].page_content
+        
+        # Audit the generated local brief
+        audit_result = support_chain.invoke({
+            "documents": docs_text,
+            "summary": summary_text
+        })
+        
+        if audit_result.is_supported:
+            print(f"[Ambiguous: Local Branch] Local brief is 100% supported on turn {local_state['turn'] + 1}.")
+            local_state["is_sup"] = True
+            break
+        else:
+            local_state["turn"] += 1
+            local_state["why_loop"] = audit_result.critique
+            print(f"[Ambiguous: Local Branch] Local brief check failed on turn {local_state['turn']}. Critique: {audit_result.critique}")
+            
+    # If after 5 turns it is still not fully supported, run partial_chain to tag the local brief
+    if not local_state["is_sup"] and local_brief_docs:
+        print("[Ambiguous: Local Branch] Local brief not 100% supported after 5 turns. Running partial audit to segregate claims...")
+        summary_text = local_brief_docs[0].page_content
+        partial_report = partial_chain.invoke({
+            "documents": docs_text,
+            "summary": summary_text
+        })
+        local_brief = partial_report
+    else:
+        local_brief = local_brief_docs[0].page_content if local_brief_docs else "No local legal context found."
     
     # 2. RUN WEB PIPELINE
     print("\n[Ambiguous: Web Branch] Executing web search RAG...")
@@ -87,8 +130,15 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
     
+    from langchain_core.documents import Document
     test_state = {
-        "request": "So, for this case regarding privacy violations of Aadhaar data, we need recent Indian Supreme Court rulings on biometric privacy and IT Act 2000."
+        "request": "So, for this case regarding privacy violations of Aadhaar data, we need recent Indian Supreme Court rulings on biometric privacy and IT Act 2000.",
+        "documents": [
+            Document(
+                page_content="Under Section 33 of the Aadhaar Act, disclosure of identity information or authentication records can only be made pursuant to an order of a court not inferior to that of a District Judge.",
+                metadata={"source": "Aadhaar Act"}
+            )
+        ]
     }
     
     test_courtstate = {
