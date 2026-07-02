@@ -24,7 +24,11 @@ from app.courtroom.rag.structure.graph.graph import graph as rag_graph
 
 compiled_rag = rag_graph.compile()
 
-def courtroom_rag_node(state: CourtroomState):
+from langchain_core.runnables import RunnableConfig
+from app.courtroom.utils.progress import update_progress
+
+def courtroom_rag_node(state: CourtroomState, config: RunnableConfig = None):
+    update_progress(config, "🔍 Initiating RAG verification registry check...")
     rag_result = compiled_rag.invoke({
         "query": state["user_input"],
         "turn": 0,
@@ -32,7 +36,7 @@ def courtroom_rag_node(state: CourtroomState):
         "is_sup": False,
         "good_retrieval": "yes",
         "retriever_needed": True
-    })
+    }, config=config)
     return {
         "final_docs": rag_result.get("final_docs", [])
     }
@@ -112,8 +116,5 @@ def build_courtroom_graph():
 from langgraph.checkpoint.memory import MemorySaver
 
 courtroom_graph = build_courtroom_graph()
-courtroom_app = courtroom_graph.compile(
-    checkpointer=MemorySaver(),
-    interrupt_before=["hitl_node"]
-)
+courtroom_app = courtroom_graph.compile(checkpointer=MemorySaver(), interrupt_before=["hitl_node"])
 

@@ -1,19 +1,11 @@
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.courtroom.graph.state import CourtroomState
 from app.courtroom.models.llm import MODERATOR_MODEL
-from app.courtroom.prompts.moderator_prompt import (
-    NUMBER_OF_PERSPECTIVES_PROMPT,
-    ROLE_ASSIGNMENT_PROMPT,
-    JUDICIARY_TYPE_PROMPT,
-)
-
-
-class PerspectiveCount(BaseModel):
-    count: int = Field(ge=2, le=10)
+from app.courtroom.prompts.moderator_prompt import ROLE_ASSIGNMENT_PROMPT
 
 
 class RoleCard(BaseModel):
@@ -25,30 +17,10 @@ class RoleAssignment(BaseModel):
     perspectives: List[RoleCard]
 
 
-class JudiciaryType(BaseModel):
-    judiciary_corrupt: bool
-
-
-def build_chain(prompt: str, output_schema: type[BaseModel]):
-    return (
-        ChatPromptTemplate.from_messages([("system", prompt)])
-        | MODERATOR_MODEL.with_structured_output(output_schema)
-    )
-
-
-perspective_count_chain = build_chain(
-    NUMBER_OF_PERSPECTIVES_PROMPT,
-    PerspectiveCount,
-)
-
-role_assignment_chain = build_chain(
-    ROLE_ASSIGNMENT_PROMPT,
-    RoleAssignment,
-)
-
-judiciary_type_chain = build_chain(
-    JUDICIARY_TYPE_PROMPT,
-    JudiciaryType,
+# We only need the role assignment chain now, since count and profile are set by the user
+role_assignment_chain = (
+    ChatPromptTemplate.from_messages([("system", ROLE_ASSIGNMENT_PROMPT)])
+    | MODERATOR_MODEL.with_structured_output(RoleAssignment)
 )
 
 
@@ -64,24 +36,21 @@ def build_perspective(perspective_id: int, role_card: RoleCard):
 
 
 def moderator_node(state: CourtroomState):
-    # Moderator should only create roles once.
+    # Moderator should only create roles once
     if state.get("perspectives"):
         return {}
 
     query = state["user_input"]
     user_commands = state.get("user_commands", {})
 
-    # 1. Perspective Count
-    requested_count = user_commands.get("number_of_perspectives")
-    if requested_count is not None:
-        perspective_count = requested_count
-    else:
-        number_result = perspective_count_chain.invoke({
-            "query": query,
-        })
-        perspective_count = number_result.count
+    # 1. Perspective Count (directly read from state/commands, default to 4)
+    perspective_count = (
+        state.get("number_of_perspectives") 
+        or user_commands.get("number_of_perspectives") 
+        or 4
+    )
 
-    # 2. Role Assignment
+    # 2. Role Assignment (ask LLM to dynamically define roles matching the count)
     specific_roles = user_commands.get("specific_roles") or []
     role_result = role_assignment_chain.invoke({
         "query": query,
@@ -89,15 +58,14 @@ def moderator_node(state: CourtroomState):
         "specific_roles": ", ".join(specific_roles) if specific_roles else "None specified",
     })
 
-    # 3. Judiciary Type
-    requested_judiciary = user_commands.get("judiciary_type")
-    if requested_judiciary is not None:
-        judiciary_corrupt = (requested_judiciary.lower() == "corrupt")
-    else:
-        judiciary_result = judiciary_type_chain.invoke({
-            "query": query,
-        })
-        judiciary_corrupt = judiciary_result.judiciary_corrupt
+    # 3. Judiciary Profile (directly read from state/commands, default to false/fair)
+    judiciary_corrupt = state.get("judiciary_corrupt")
+    if judiciary_corrupt is None:
+        requested_judiciary = user_commands.get("judiciary_type")
+        if requested_judiciary is not None:
+            judiciary_corrupt = (requested_judiciary.lower() == "corrupt")
+        else:
+            judiciary_corrupt = False
 
     return {
         "number_of_perspectives": perspective_count,
