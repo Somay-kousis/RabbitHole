@@ -164,14 +164,14 @@ body::before {
 /* Main Gazette Columns */
 .gazette-columns {
   display: grid;
-  grid-template-columns: 1.8fr 1fr 1.2fr;
+  grid-template-columns: 1.1fr 1.8fr 1.1fr;
   gap: 36px;
   align-items: start;
 }
 
 @media (max-width: 1024px) {
   .gazette-columns {
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 1fr 1.6fr;
   }
 }
 
@@ -396,4 +396,38 @@ body::before {
 
 .margin-top-lg {
   margin-top: 40px;
+}
+
+/* Thematic Telegraph Signal Lamp */
+.signal-lamp {
+  width: 10px;
+  height: 10px;
+  background-color: var(--stamp-red);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--stamp-red);
+  display: inline-block;
+  animation: pulse-lamp 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-lamp {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(0.95); 
+    box-shadow: 0 0 4px var(--stamp-red);
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.1); 
+    box-shadow: 0 0 12px var(--stamp-red);
+  }
+}
+
+.telegraph-flicker {
+  font-family: var(--font-typewriter);
+  animation: txt-flicker 0.15s infinite alternate;
+}
+
+@keyframes txt-flicker {
+  0% { opacity: 0.95; }
+  100% { opacity: 1; }
 }
