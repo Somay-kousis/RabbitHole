@@ -120,27 +120,7 @@ export default function App() {
     }
   ]);
 
-  const [history, setHistory] = useState([
-    {
-      "thread_id": "92763d3a-6625-490c-96b8-d27c94ced05b",
-      "title": "Case: Bachan Singh v. State of Punjab. Topic: Rarest of rare doctrine for death ...",
-      "timestamp": "Tue Jun 30 15:29:17 IST 2026",
-      "status": "running"
-    },
-    {
-      "thread_id": "713a29b4-82a7-47b1-912c-0e78c439af82",
-      "title": "Case: Kesavananda Bharati v. State of Kerala. Topic: Basic Structure Doctrine",
-      "timestamp": "Mon Jun 29 11:15:42 IST 2026",
-      "status": "completed"
-    },
-    {
-      "thread_id": "c39a816b-12d4-4bb8-86d9-7681c3e1aa01",
-      "title": "Case: Novartis v. Union of India. Topic: Evergreening of patents",
-      "timestamp": "Sun Jun 28 17:02:10 IST 2026",
-      "status": "completed"
-    }
-  ]);
-
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Form Configuration
@@ -151,6 +131,43 @@ export default function App() {
   
   // Notice alert state
   const [submittedDispatch, setSubmittedDispatch] = useState(null);
+
+  // New Live Connection States
+  const [threadId, setThreadId] = useState(null);
+  const [liveLogs, setLiveLogs] = useState([]);
+  const [liveState, setLiveState] = useState({
+    perspectives: [],
+    judiciary: {},
+    conclusion: "",
+    final_docs: []
+  });
+  const [sseStatus, setSseStatus] = useState("idle"); // idle, running, interrupted, complete, error
+  const [hitlInput, setHitlInput] = useState("");
+  const [expandedRags, setExpandedRags] = useState({});
+  const [currentProgress, setCurrentProgress] = useState("");
+
+  const backendUrl = window.location.port === "5173" || window.location.port === "5174" 
+    ? "http://localhost:8000" 
+    : (import.meta.env.VITE_BACKEND_URL || "");
+
+  // Fetch Cases and History Lists
+  const fetchData = async () => {
+    try {
+      const casesRes = await fetch(`${backendUrl}/api/cases`);
+      const casesData = await casesRes.json();
+      setCases(casesData);
+
+      const historyRes = await fetch(`${backendUrl}/api/history`);
+      const historyData = await historyRes.json();
+      setHistory(historyData);
+    } catch (e) {
+      console.error("Failed to load backend databases:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Pre-fill setup form from landmark case select
   const selectCasePrecedent = (item) => {
@@ -165,18 +182,248 @@ export default function App() {
     }
   };
 
-  // Mock submit handler for vintage homepage
-  const handleLaunchSimulation = (e) => {
+  // Simple markdown-to-React elements formatter
+  const formatMarkdown = (text) => {
+    if (!text) return "";
+    
+    const lines = text.split("\n");
+    return lines.map((line, idx) => {
+      let cleanLine = line.trim();
+      if (!cleanLine) return <div key={idx} style={{ height: '8px' }} />;
+      
+      // Check if it's a bullet point
+      const isBullet = cleanLine.startsWith("* ") || cleanLine.startsWith("- ");
+      if (isBullet) {
+        cleanLine = cleanLine.substring(2);
+      }
+      
+      // Replace **bold** with <strong>bold</strong>
+      const parts = cleanLine.split(/\*\*([^*]+)\*\*/g);
+      const content = parts.map((part, pIdx) => {
+        if (pIdx % 2 === 1) {
+          return <strong key={pIdx}>{part}</strong>;
+        }
+        return part;
+      });
+
+      if (isBullet) {
+        return (
+          <li key={idx} style={{ marginLeft: '16px', listStyleType: 'disc', fontSize: '0.9em', marginTop: '4px' }}>
+            {content}
+          </li>
+        );
+      }
+      
+      return (
+        <p key={idx} style={{ textIndent: '0px', marginTop: '6px', lineHeight: '1.4' }}>
+          {content}
+        </p>
+      );
+    });
+  };
+
+  // Submit handler to launch simulation
+  const handleLaunchSimulation = async (e) => {
     e.preventDefault();
     if (!caseQuery.trim()) return;
 
-    // Save configuration state locally or send alert
-    setSubmittedDispatch({
-      query: caseQuery,
-      perspectives: perspectiveCount,
-      corruption: judiciaryCorrupt ? "CORRUPT BENCH" : "NEUTRAL PRECEDENCE",
-      roles: specificRoles || "Standard Legal Suite"
+    setLoading(true);
+    setLiveLogs([]);
+    setLiveState({
+      perspectives: [],
+      judiciary: {},
+      conclusion: "",
+      final_docs: []
     });
+    setSseStatus("connecting");
+
+    try {
+      // 1. Start the debate on backend
+      const res = await fetch(`${backendUrl}/api/debate/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_input: caseQuery,
+          number_of_perspectives: parseInt(perspectiveCount),
+          judiciary_corrupt: judiciaryCorrupt,
+          specific_roles: specificRoles ? specificRoles.split(",").map(r => r.trim()) : []
+        })
+      });
+
+      const data = await res.json();
+      const newThreadId = data.thread_id;
+      setThreadId(newThreadId);
+
+      // Refresh list to show newly starting item in history
+      fetchData();
+
+      // 2. Open EventSource SSE stream
+      const eventSource = new EventSource(`${backendUrl}/api/debate/stream/${newThreadId}`);
+      setSseStatus("running");
+      setCurrentProgress("Initializing Trial Connections...");
+
+      eventSource.addEventListener("progress", (event) => {
+        const payload = JSON.parse(event.data);
+        setLiveLogs(prev => [...prev, `[PROGRESS] ${payload.message}`]);
+        setCurrentProgress(payload.message);
+      });
+
+      eventSource.addEventListener("node_start", (event) => {
+        const payload = JSON.parse(event.data);
+        const node = payload.node;
+        setLiveLogs(prev => [...prev, `[INIT] Node Execution Started: ${node.replace('_node', '').toUpperCase()}`]);
+        
+        const nodeMessages = {
+          "query_refine_node": "Formulating Case & Structuring Legal Dispute...",
+          "moderator_node": "Initializing Courtroom & Assigning Advocate Personas...",
+          "p1_node": "Advocate 1 is drafting arguments...",
+          "p2_node": "Advocate 2 is drafting arguments...",
+          "p3_node": "Advocate 3 is drafting arguments...",
+          "p4_node": "Advocate 4 is drafting arguments...",
+          "p5_node": "Advocate 5 is drafting arguments...",
+          "p6_node": "Advocate 6 is drafting arguments...",
+          "p7_node": "Advocate 7 is drafting arguments...",
+          "p8_node": "Advocate 8 is drafting arguments...",
+          "judiciary_node": "Judiciary Bench is deliberating and drafting verdict...",
+          "conclusion_node": "Court Clerk is drafting the final conclusion report..."
+        };
+        if (nodeMessages[node]) {
+          setCurrentProgress(nodeMessages[node]);
+        }
+      });
+
+      eventSource.addEventListener("node_update", (event) => {
+        const payload = JSON.parse(event.data);
+        setLiveLogs(prev => [...prev, `[UPDATE] Node Completed: ${payload.node.replace('_node', '').toUpperCase()}`]);
+        
+        setLiveState(prev => ({
+          ...prev,
+          perspectives: payload.perspectives || prev.perspectives,
+          judiciary: payload.judiciary || prev.judiciary,
+          conclusion: payload.conclusion || prev.conclusion,
+          final_docs: payload.final_docs || prev.final_docs
+        }));
+      });
+
+      eventSource.addEventListener("interrupt", (event) => {
+        setSseStatus("interrupted");
+        setCurrentProgress("");
+        setLiveLogs(prev => [...prev, `[INTERRUPT] Awaiting Human Input gateway review...`]);
+        eventSource.close();
+        setLoading(false);
+      });
+
+      eventSource.addEventListener("complete", (event) => {
+        setSseStatus("complete");
+        setCurrentProgress("");
+        setLiveLogs(prev => [...prev, `[COMPLETE] Chamber verdict finalized.`]);
+        eventSource.close();
+        setLoading(false);
+        fetchData(); // Refresh history
+      });
+
+      eventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        setSseStatus("error");
+        setLiveLogs(prev => [...prev, `[CRITICAL ERROR] Connection lost.`]);
+        eventSource.close();
+        setLoading(false);
+      };
+
+    } catch (err) {
+      console.error("Launch error:", err);
+      setSseStatus("error");
+      setLoading(false);
+    }
+  };
+
+  // Resume Handler for Human-in-the-Loop Interruption
+  const handleResumeDebate = async (action) => {
+    if (!threadId) return;
+    setLoading(true);
+    setSseStatus("running");
+
+    try {
+      await fetch(`${backendUrl}/api/debate/resume/${threadId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: action, // "continue_debate" or "generate_conclusion" or "continue_debate_with_input"
+          in_session_input: hitlInput
+        })
+      });
+      setHitlInput("");
+
+      // Reconnect stream
+      const eventSource = new EventSource(`${backendUrl}/api/debate/stream/${threadId}`);
+      setCurrentProgress("Re-establishing Trial Session Connection...");
+
+      eventSource.addEventListener("progress", (event) => {
+        const payload = JSON.parse(event.data);
+        setLiveLogs(prev => [...prev, `[PROGRESS] ${payload.message}`]);
+        setCurrentProgress(payload.message);
+      });
+
+      eventSource.addEventListener("node_start", (event) => {
+        const payload = JSON.parse(event.data);
+        const node = payload.node;
+        setLiveLogs(prev => [...prev, `[INIT] Node Execution Started: ${node.replace('_node', '').toUpperCase()}`]);
+        
+        const nodeMessages = {
+          "query_refine_node": "Formulating Case & Structuring Legal Dispute...",
+          "moderator_node": "Initializing Courtroom & Assigning Advocate Personas...",
+          "p1_node": "Advocate 1 is drafting arguments...",
+          "p2_node": "Advocate 2 is drafting arguments...",
+          "p3_node": "Advocate 3 is drafting arguments...",
+          "p4_node": "Advocate 4 is drafting arguments...",
+          "p5_node": "Advocate 5 is drafting arguments...",
+          "p6_node": "Advocate 6 is drafting arguments...",
+          "p7_node": "Advocate 7 is drafting arguments...",
+          "p8_node": "Advocate 8 is drafting arguments...",
+          "judiciary_node": "Judiciary Bench is deliberating and drafting verdict...",
+          "conclusion_node": "Court Clerk is drafting the final conclusion report..."
+        };
+        if (nodeMessages[node]) {
+          setCurrentProgress(nodeMessages[node]);
+        }
+      });
+
+      eventSource.addEventListener("node_update", (event) => {
+        const payload = JSON.parse(event.data);
+        setLiveLogs(prev => [...prev, `[UPDATE] Node Completed: ${payload.node.replace('_node', '').toUpperCase()}`]);
+        setLiveState(prev => ({
+          ...prev,
+          perspectives: payload.perspectives || prev.perspectives,
+          judiciary: payload.judiciary || prev.judiciary,
+          conclusion: payload.conclusion || prev.conclusion,
+          final_docs: payload.final_docs || prev.final_docs
+        }));
+      });
+
+      eventSource.addEventListener("interrupt", (event) => {
+        setSseStatus("interrupted");
+        setCurrentProgress("");
+        eventSource.close();
+        setLoading(false);
+      });
+
+      eventSource.addEventListener("complete", (event) => {
+        setSseStatus("complete");
+        setCurrentProgress("");
+        eventSource.close();
+        setLoading(false);
+        fetchData();
+      });
+
+      eventSource.onerror = () => {
+        setSseStatus("error");
+        eventSource.close();
+        setLoading(false);
+      };
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+    }
   };
 
   return (
@@ -322,63 +569,162 @@ export default function App() {
           </div>
         </div>
 
-        {/* Column 2: Archived Machinery (The Locked Modules) */}
+        {/* Column 2: Live Courtroom Chamber */}
         <div className="gazette-col gazette-col-divider">
           <div className="gazette-article">
-            <span className="article-category">II. Archived Machinery</span>
-            <h2 className="article-headline">Locked Inventions & Proprietary Claims</h2>
-            <div className="article-meta">DECREE OF PATENT OFFICE, 1892</div>
+            <span className="article-category">II. Courtroom Chamber Feed</span>
+            <h2 className="article-headline">The Chamber in Live Session</h2>
+            <div className="article-meta">REALTIME TELEGRAPH WIRE SERVICE</div>
+
+            {(sseStatus === "connecting" || sseStatus === "running") && (
+              <div style={{ 
+                background: 'rgba(179, 39, 39, 0.05)', 
+                border: '1px dashed var(--stamp-red)', 
+                padding: '12px 16px', 
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                borderRadius: '2px'
+              }}>
+                <span className="signal-lamp"></span>
+                <span className="telegraph-flicker" style={{ fontSize: '0.85em', color: 'var(--text-ink)', fontWeight: 'bold' }}>
+                  INCOMING DISPATCH: {currentProgress || "Connecting to virtual chamber..."}
+                </span>
+              </div>
+            )}
             
-            <p className="article-body">
-              The following processing devices remain in lockup, pending legal compatibility certifications and funding limits.
-            </p>
-
-            <div className="vintage-illustration-frame">
-              <img 
-                src="https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&q=60&w=400" 
-                alt="Vintage Books Library"
-                className="vintage-illustration" 
-              />
-              <div className="illustration-caption">
-                Fig 2.&mdash;A registry cabinet storing epistemic record binders.
-              </div>
-            </div>
-
-            <div className="catalog-list">
-              {/* Engine 2 */}
-              <div className="catalog-item disabled">
-                <div className="flex-between">
-                  <span className="catalog-title">02 / Contradiction Finder</span>
-                  <span className="ink-stamp red">Pending Patent</span>
-                </div>
-                <p className="catalog-desc">
-                  Scans legal documents, smart contracts, or transcripts to map and flag logical contradictions, overrides, and logic loopholes.
+            {sseStatus === "idle" ? (
+              <div>
+                <p className="article-body">
+                  No active trial is registered in the chamber. Configure your query on the Dispatch Desk and submit it to launch live proceedings.
                 </p>
-              </div>
-
-              {/* Engine 3 */}
-              <div className="catalog-item disabled">
-                <div className="flex-between">
-                  <span className="catalog-title">03 / Epistemic Graph</span>
-                  <span className="ink-stamp blue">Under Injunction</span>
+                <div className="vintage-illustration-frame">
+                  <img 
+                    src="https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&q=60&w=400" 
+                    alt="Vintage Books Library"
+                    className="vintage-illustration" 
+                  />
+                  <div className="illustration-caption">
+                    Fig 2.&mdash;A registry cabinet storing epistemic record binders.
+                  </div>
                 </div>
-                <p className="catalog-desc">
-                  Draws factual topological mesh structures linking courtroom claims directly to reference files.
-                </p>
               </div>
-
-              {/* Engine 4 */}
-              <div className="catalog-item disabled">
-                <div className="flex-between">
-                  <span className="catalog-title">04 / Persona Sandbox</span>
-                  <span className="ink-stamp red">Restricted</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* 1. Live Ticker / Logs */}
+                <div className="catalog-list" style={{ maxHeight: '180px', overflowY: 'auto', background: 'var(--bg-parchment-dark)', padding: '12px', border: '1px solid var(--border-ink)' }}>
+                  <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8em', marginBottom: '8px' }}>TELEGRAPH FEED LOGS:</h4>
+                  {liveLogs.map((log, idx) => (
+                    <div key={idx} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7em', borderBottom: '1px dotted var(--border-ink-thin)', padding: '2px 0' }}>
+                      {log}
+                    </div>
+                  ))}
                 </div>
-                <p className="catalog-desc">
-                  Modular agent Motives customization console to configure temperature thresholds and target motives.
-                </p>
-              </div>
-            </div>
 
+                {/* 2. RAG Source Documents */}
+                {liveState.final_docs.length > 0 && (
+                  <div style={{ background: 'rgba(255,255,255,0.4)', padding: '14px', border: '1px solid var(--border-ink)' }}>
+                    <h4 style={{ fontFamily: 'var(--font-typewriter)', fontSize: '0.8em', marginBottom: '8px' }}>RAG Verification Registry Chunks:</h4>
+                    {liveState.final_docs.map((doc, idx) => {
+                      let sourceLabel = "Verification Registry Case Chunk";
+                      if (doc.metadata.type === "recomposed_merged_brief") {
+                        sourceLabel = "Synthesized Merged Brief (Local + Web)";
+                      } else if (doc.metadata.type === "recomposed_web_brief") {
+                        sourceLabel = "Synthesized Web Brief";
+                      } else if (doc.metadata.type === "recomposed_local_brief") {
+                        sourceLabel = "Synthesized Local Brief";
+                      } else if (doc.metadata.source) {
+                        sourceLabel = doc.metadata.source;
+                      }
+
+                      const isExpanded = expandedRags[idx];
+                      const textToShow = isExpanded 
+                        ? doc.page_content 
+                        : (doc.page_content.substring(0, 250) + (doc.page_content.length > 250 ? "..." : ""));
+
+                      return (
+                        <div key={idx} style={{ fontSize: '0.85em', marginBottom: '8px', borderBottom: '1px dotted var(--border-ink-thin)', paddingBottom: '8px' }}>
+                          <strong>Source:</strong> {sourceLabel}
+                          <div style={{ fontStyle: 'italic', marginTop: '4px' }}>
+                            {formatMarkdown(textToShow)}
+                          </div>
+                          {doc.page_content.length > 250 && (
+                            <button 
+                              onClick={() => setExpandedRags(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                              style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: 'var(--stamp-blue)', 
+                                cursor: 'pointer', 
+                                fontFamily: 'var(--font-mono)', 
+                                fontSize: '0.75em', 
+                                padding: '4px 0 0', 
+                                textDecoration: 'underline' 
+                              }}
+                            >
+                              {isExpanded ? "[ SHOW LESS ]" : "[ READ FULL BRIEF ]"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 3. Advocates / Perspectives Statements */}
+                {liveState.perspectives.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <h4 style={{ fontFamily: 'var(--font-typewriter)', fontSize: '0.9em' }}>Advocacy Arguments:</h4>
+                    {liveState.perspectives.map((p, idx) => (
+                      <div key={idx} style={{ border: '1px solid var(--border-ink)', padding: '10px', background: 'rgba(255,255,255,0.4)' }}>
+                        <strong>Advocate {p.id}: {p.role}</strong>
+                        <div style={{ fontSize: '0.85em', marginTop: '4px' }}>{p.public_statement ? formatMarkdown(p.public_statement) : "Preparing statement..."}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 4. Judiciary Deliberation */}
+                {liveState.judiciary.verdict && (
+                  <div style={{ border: '2px dashed var(--stamp-red)', padding: '14px', background: 'rgba(179, 39, 39, 0.05)', position: 'relative' }}>
+                    <div className="ink-stamp red" style={{ position: 'absolute', top: '10px', right: '10px' }}>VERDICT</div>
+                    <h4 style={{ fontFamily: 'var(--font-typewriter)' }}>JUDICIARY VERDICT:</h4>
+                    <div style={{ fontSize: '0.9em', marginTop: '6px' }}><strong>Reasoning:</strong> {formatMarkdown(liveState.judiciary.reasoning)}</div>
+                    <p style={{ fontSize: '0.95em', fontWeight: 'bold', marginTop: '6px' }}>Verdict: {liveState.judiciary.verdict}</p>
+                  </div>
+                )}
+
+                {/* 5. Human-in-the-Loop Gateway (HITL) */}
+                {sseStatus === "interrupted" && (
+                  <div style={{ background: 'var(--bg-parchment-dark)', border: '2px solid var(--stamp-blue)', padding: '16px', borderRadius: '4px' }}>
+                    <h4 style={{ fontFamily: 'var(--font-typewriter)', color: 'var(--stamp-blue)' }}>HUMAN GATEWAY REVIEW REQUEST</h4>
+                    <p style={{ fontSize: '0.85em', margin: '6px 0 12px' }}>Review the verdict above. You can intervene with additional session context, continue trial, or draft the final verdict.</p>
+                    <textarea 
+                      className="text-input"
+                      rows={2}
+                      style={{ width: '100%', outline: 'none', padding: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.8em', marginBottom: '12px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border-ink)' }}
+                      placeholder="Type additional trial inputs here..."
+                      value={hitlInput}
+                      onChange={e => setHitlInput(e.target.value)}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="vintage-btn" onClick={() => handleResumeDebate("continue_debate")}>Continue</button>
+                      <button className="vintage-btn" onClick={() => handleResumeDebate("continue_debate_with_input")} disabled={!hitlInput.trim()}>Submit Input</button>
+                      <button className="vintage-btn" onClick={() => handleResumeDebate("generate_conclusion")}>Finalize Trial</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. Final Conclusion */}
+                {liveState.conclusion && (
+                  <div style={{ border: '2px double var(--border-ink)', padding: '16px', background: 'rgba(255,255,255,0.7)' }}>
+                    <h4 style={{ fontFamily: 'var(--font-typewriter)' }}>FINAL COURT CLERK DECISION SUMMARY</h4>
+                    <div style={{ fontSize: '0.9em', marginTop: '6px' }}>{formatMarkdown(liveState.conclusion)}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

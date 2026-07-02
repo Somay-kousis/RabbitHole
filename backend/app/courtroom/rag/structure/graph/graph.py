@@ -28,14 +28,7 @@ graph.add_node("partial_supported_node", partial_supported_node)
 
 graph.add_edge(START, "level_one_refine_node")
 
-graph.add_conditional_edges(
-    "level_one_refine_node",
-    route_ragornot,
-    {
-        "retriever_node": "retriver_node",
-        "placeholder": END
-    }
-)
+graph.add_edge("level_one_refine_node", "retriver_node")
 
 graph.add_edge("retriver_node", "docs_quality_node")
 
@@ -65,3 +58,5 @@ graph.add_edge("not_supported_node", "correct_node")
 graph.add_edge("partial_supported_node", END)
 graph.add_edge("incorrect_node", END)
 graph.add_edge("ambigious_node", END)
+
+rag_app = graph.compile()

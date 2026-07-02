@@ -1,3 +1,4 @@
+from typing import List, Literal
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -25,6 +26,18 @@ class LatestRoundSummaryOutput(BaseModel):
     latest_overall_round_summary: str = Field(description="The public record/summary of the courtroom round.")
 
 
+class VerdictOutput(BaseModel):
+    verdict: Literal[
+        "continue debate",
+        "insufficient evidence",
+        "side A currently stronger",
+        "side B currently stronger",
+        "shared responsibility",
+        "state responsibility significant",
+        "ready for conclusion"
+    ] = Field(description="The final verdict for this round, chosen from the allowed options.")
+
+
 type_chain = (
     ChatPromptTemplate.from_messages([("system", JUDICIARY_TYPE_PROMPT)])
     | JUDICIARY_LITE_MODEL.with_structured_output(JudiciaryTypeOutput)
@@ -43,8 +56,7 @@ reason_chain = (
 
 verdict_chain = (
     ChatPromptTemplate.from_messages([("system", VERDICT_PROMPT)])
-    | JUDICIARY_LITE_MODEL
-    | StrOutputParser()
+    | JUDICIARY_LITE_MODEL.with_structured_output(VerdictOutput)
 )
 
 latest_round_summary_chain = (
@@ -133,14 +145,14 @@ def judiciary_node(state: CourtroomState):
     latest_round_summary_result = latest_round_summary_chain.invoke({
         "public_statements": public_statements,
         "judiciary_reasoning": reason_result,
-        "judiciary_verdict": verdict_result,
+        "judiciary_verdict": verdict_result.verdict,
     })
 
     judiciary_state = {
         "type": judiciary_type,
         "memory_summary": memory_summary_text,
         "reasoning": reason_result,
-        "verdict": verdict_result,
+        "verdict": verdict_result.verdict,
     }
 
     return {

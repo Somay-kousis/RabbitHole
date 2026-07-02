@@ -103,7 +103,8 @@ def search_documents(query: str, top_k: int = 10) -> list[Document]:
         embeddings=embedding_model,
         sparse_encoder=bm25_encoder,
         index=index,
-        top_k=50
+        top_k=50,
+        text_key="text"
     )
     
     # 1. Fetch a large pool of 50 documents internally for the wide net

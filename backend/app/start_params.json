@@ -10,5 +10,44 @@
         "criminal"
       ]
     }
+  },
+  "492d2b9f-5f8f-4a67-8cf8-f54de88a3b4b": {
+    "user_input": "Data centers in India ",
+    "turn_count": 0,
+    "judiciary_corrupt": true,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "corrupt",
+      "specific_roles": [
+        "Business man",
+        "Farmers"
+      ]
+    }
+  },
+  "4c5b5ef1-44e1-47b1-a441-f448a5f7f580": {
+    "user_input": "Data centers in India ",
+    "turn_count": 0,
+    "judiciary_corrupt": true,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "corrupt",
+      "specific_roles": [
+        "Business man",
+        "Farmers"
+      ]
+    }
+  },
+  "0045046e-4726-4e4b-b141-33fb4730cb78": {
+    "user_input": "demolition of houses on government land with 3 days notice ",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
   }
 }

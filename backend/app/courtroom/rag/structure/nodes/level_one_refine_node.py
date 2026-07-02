@@ -1,9 +1,7 @@
 import os
 import json
-from pydantic import BaseModel
-from app.courtroom.models.llm import RETRIVER_LITE_MODEL, RETRIEVER_MODEL
+from app.courtroom.models.llm import RETRIEVER_MODEL
 from app.courtroom.rag.structure.graph.states import RagState
-from app.courtroom.graph.state import CourtroomState
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -24,12 +22,13 @@ cases_str = ""
 for category, docs in available_docs.get("cases", {}).items():
     cases_str += f"- {category}: {', '.join(docs)}\n"
 
-class needed(BaseModel):
-    needed: bool
-
-# 1. Clerk prompt: summarizes dispute & lists exactly which available files are needed
+# Clerk prompt: analyzes query from all POVs dynamically and maps to available documents
 request_prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a legal clerk assisting a courtroom agent.
+    ("system", """You are a senior legal clerk assisting a courtroom agent.
+    
+    Your job is to analyze the case query dynamically from all possible legal, human, ecological, commercial, and constitutional dimensions. 
+    Brainstorm the diverse, real-world problems, disputes, and struggles people might face under every possible point of view relative to this query.
+    Do not limit yourself to specific domains; explore all facets of the issue.
     
     Here is the case we are currently proceeding with:
     {case}
@@ -42,20 +41,16 @@ request_prompt = ChatPromptTemplate.from_messages([
     LANDMARK CASES AVAILABLE:
     {available_cases}
     
-    Write a concise summary of the case issue and select which available documents are needed. You must respond in this exact format:
-    'So, for this case [brief summary of the dispute], we need: [comma-separated list of document titles]'"""),
-])
-
-# 2. Decision prompt: checks if retrieval is needed or not
-needed_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are being provided a user's query, you have to decide whether the query needs retrieval for laws and cases documents of India or not, strictly reply with True or False"),
-    ("user", "{query} for my query I need {request}")
+    Based on your multi-dimensional brainstorming of the issue, write a concise summary of the case and select all available documents needed to address these problems from every possible perspective. You must respond in this exact format:
+    'So, for this case [brief summary of the dispute and its multi-perspective issues], we need: [comma-separated list of document titles]'"""),
 ])
 
 request_chain = request_prompt | RETRIEVER_MODEL | StrOutputParser()
-needed_chain = needed_prompt | RETRIVER_LITE_MODEL.with_structured_output(needed)
 
-def level_one_refine_node(state: RagState):
+from app.courtroom.utils.progress import update_progress
+
+def level_one_refine_node(state: RagState, config=None):
+    update_progress(config, "🏛️ Clerk is mapping query to available laws & landmark cases...")
     # 1. Invoke the clerk chain to synthesize the case and find file names
     req_output = request_chain.invoke({
         "case": state["query"],
@@ -63,16 +58,8 @@ def level_one_refine_node(state: RagState):
         "available_cases": cases_str
     })
     
-    # 2. Use the output in the decision chain
-    is_needed = needed_chain.invoke({
-        "query": state["query"],
-        "request": req_output
-    })
-    
-    # 3. Return updates to the state
+    # 2. Return updates to the state
     return {
         "request": req_output,
-        "retriever_needed": is_needed.needed,
         "turn": 0
     }
-

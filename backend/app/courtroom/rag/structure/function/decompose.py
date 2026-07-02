@@ -1,3 +1,4 @@
+import concurrent.futures
 from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -20,8 +21,8 @@ decompose_chain = decompose_prompt | RETRIVER_LITE_MODEL.with_structured_output(
 
 def decompose(state: RagState) -> list:
     """
-    Breaks the request into sub-queries, runs each through the retriever,
-    and returns a merged pool of documents (duplicates are naturally handled by IDs).
+    Breaks the request into sub-queries, runs each through the retriever in parallel,
+    and returns a merged pool of documents.
     """
     result = decompose_chain.invoke({"request": state["request"]})
     sub_queries = result.sub_queries
@@ -29,11 +30,18 @@ def decompose(state: RagState) -> list:
     all_docs = list(state["documents"])  # start with existing docs
     seen_contents = {doc.page_content for doc in all_docs}
     
-    for query in sub_queries:
-        new_docs = search_documents(query)
-        for doc in new_docs:
-            if doc.page_content not in seen_contents:
-                all_docs.append(doc)
-                seen_contents.add(doc.page_content)
+    # Run document retrieval for all sub-queries in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(search_documents, query): query for query in sub_queries}
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                new_docs = future.result()
+                for doc in new_docs:
+                    if doc.page_content not in seen_contents:
+                        all_docs.append(doc)
+                        seen_contents.add(doc.page_content)
+            except Exception as e:
+                query = futures[future]
+                print(f"Error searching documents for query '{query}': {e}")
     
     return all_docs

@@ -3,7 +3,8 @@
     "."
   ],
   "graphs": {
-    "courtroom": "./app/courtroom/graph/builder.py:courtroom_app"
+    "courtroom": "./app/courtroom/graph/builder.py:courtroom_app",
+    "rag": "./app/courtroom/rag/structure/graph/graph.py:rag_app"
   },
   "env": ".env",
   "http": {
