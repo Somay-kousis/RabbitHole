@@ -96,7 +96,7 @@ if __name__ == "__main__":
     }
     
     try:
-        output = ambigious_node(test_state, test_courtstate)
+        output = ambigious_node(test_state)
         print("\n================ FINAL MERGED BRIEF (AMBIGUOUS) ================")
         print(output["final_docs"][0].page_content)
         print("================================================================")

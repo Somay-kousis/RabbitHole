@@ -47,7 +47,7 @@ if __name__ == "__main__":
     }
     
     try:
-        output = incorrect_node(test_state, test_courtstate)
+        output = incorrect_node(test_state)
         print("\n================ FINAL RECOMPOSED BRIEF (WEB) ================")
         print(output["final_docs"][0].page_content)
         print("==============================================================")
