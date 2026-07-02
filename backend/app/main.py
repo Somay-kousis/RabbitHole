@@ -97,6 +97,7 @@ def start_debate(req: StartDebateRequest):
         "user_input": req.user_input,
         "turn_count": 0,
         "judiciary_corrupt": req.judiciary_corrupt if req.judiciary_corrupt is not None else False,
+        "number_of_perspectives": req.number_of_perspectives or 4,
         "user_commands": {
             "number_of_perspectives": req.number_of_perspectives,
             "judiciary_type": "corrupt" if req.judiciary_corrupt else "neutral",
@@ -165,6 +166,8 @@ def resume_debate(thread_id: str, req: ResumeDebateRequest):
     
     return {"status": "resumed"}
 
+from app.courtroom.utils.progress import active_queues
+
 @app.get("/api/debate/stream/{thread_id}")
 async def stream_debate(thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
@@ -182,6 +185,46 @@ async def stream_debate(thread_id: str):
         # Resuming execution
         input_data = None
 
+    # Create active queue for this thread
+    queue = asyncio.Queue()
+    active_queues[thread_id] = queue
+
+    async def run_graph():
+        try:
+            # We run the LangGraph simulation
+            async for event in courtroom_app.astream(input_data, config=config):
+                for node_name, state_update in event.items():
+                    await queue.put({
+                        "type": "node_update",
+                        "node": node_name,
+                        "state_update": state_update
+                    })
+            
+            # Check if we are at an interrupt (e.g. hitl_node is next)
+            current_state = courtroom_app.get_state(config)
+            if current_state.next:
+                await queue.put({
+                    "type": "interrupt",
+                    "next": list(current_state.next),
+                    "state": serialize_state(current_state.values)
+                })
+            else:
+                await queue.put({
+                    "type": "complete",
+                    "state": serialize_state(current_state.values)
+                })
+        except asyncio.CancelledError:
+            # Exit silently when the generator cancels the task
+            pass
+        except Exception as e:
+            import traceback
+            trace_str = traceback.format_exc()
+            await queue.put({
+                "type": "error",
+                "message": str(e),
+                "trace": trace_str
+            })
+
     async def sse_generator():
         # Update thread status in history
         history = load_json_file(HISTORY_FILE, [])
@@ -191,71 +234,73 @@ async def stream_debate(thread_id: str):
                 break
         save_json_file(HISTORY_FILE, history)
 
+        # Launch the graph in a concurrent background task
+        task = asyncio.create_task(run_graph())
+
         try:
-            # We run the LangGraph simulation
-            # Since the graph might invoke synchronous models, we run astream as it's async-native
-            async for event in courtroom_app.astream(input_data, config=config):
-                for node_name, state_update in event.items():
-                    # Send node execution start notification
+            while True:
+                event = await queue.get()
+                event_type = event["type"]
+
+                if event_type == "progress":
+                    yield f"event: progress\ndata: {json.dumps({'message': event['message']})}\n\n"
+
+                elif event_type == "node_update":
+                    node_name = event["node"]
+                    state_update = event["state_update"]
+
+                    # Yield start notice first
                     yield f"event: node_start\ndata: {json.dumps({'node': node_name})}\n\n"
-                    await asyncio.sleep(0.1)
-                    
-                    # Package details of the node execution
+                    await asyncio.sleep(0.05)
+
                     payload = {"node": node_name}
-                    
                     if "final_docs" in state_update and state_update["final_docs"]:
                         docs = state_update["final_docs"]
                         payload["final_docs"] = [
                             {"page_content": doc.page_content, "metadata": getattr(doc, "metadata", {})}
                             for doc in docs
                         ]
-                    
                     if "perspectives" in state_update:
                         payload["perspectives"] = [dict(p) for p in state_update["perspectives"]]
-                        
                     if "judiciary" in state_update:
                         payload["judiciary"] = dict(state_update["judiciary"])
-                        
                     if "conclusion" in state_update:
                         payload["conclusion"] = state_update["conclusion"]
-                        
                     if "latest_overall_round_summary" in state_update:
                         payload["latest_overall_round_summary"] = state_update["latest_overall_round_summary"]
-                        
-                    # Yield event update
+
                     yield f"event: node_update\ndata: {json.dumps(payload)}\n\n"
-                    await asyncio.sleep(0.1)
 
-            # Execution successfully completed this segment
-            # Check if we are at an interrupt (e.g. hitl_node is next)
-            current_state = courtroom_app.get_state(config)
-            
-            if current_state.next:
-                # We are paused at an interrupt (usually before hitl_node)
-                history = load_json_file(HISTORY_FILE, [])
-                for entry in history:
-                    if entry["thread_id"] == thread_id:
-                        entry["status"] = "waiting_for_input"
-                        break
-                save_json_file(HISTORY_FILE, history)
+                elif event_type == "interrupt":
+                    history = load_json_file(HISTORY_FILE, [])
+                    for entry in history:
+                        if entry["thread_id"] == thread_id:
+                            entry["status"] = "waiting_for_input"
+                            break
+                    save_json_file(HISTORY_FILE, history)
 
-                yield f"event: interrupt\ndata: {json.dumps({'next': list(current_state.next), 'state': serialize_state(current_state.values)})}\n\n"
-            else:
-                # The graph ended completely
-                history = load_json_file(HISTORY_FILE, [])
-                for entry in history:
-                    if entry["thread_id"] == thread_id:
-                        entry["status"] = "concluded"
-                        break
-                save_json_file(HISTORY_FILE, history)
+                    yield f"event: interrupt\ndata: {json.dumps({'next': event['next'], 'state': event['state']})}\n\n"
+                    break
 
-                yield f"event: complete\ndata: {json.dumps({'state': serialize_state(current_state.values)})}\n\n"
+                elif event_type == "complete":
+                    history = load_json_file(HISTORY_FILE, [])
+                    for entry in history:
+                        if entry["thread_id"] == thread_id:
+                            entry["status"] = "concluded"
+                            break
+                    save_json_file(HISTORY_FILE, history)
 
-        except Exception as e:
-            import traceback
-            trace_str = traceback.format_exc()
-            print(f"Error streaming courtroom thread {thread_id}: {e}\n{trace_str}")
-            yield f"event: error\ndata: {json.dumps({'message': str(e), 'trace': trace_str})}\n\n"
+                    yield f"event: complete\ndata: {json.dumps({'state': event['state']})}\n\n"
+                    break
+
+                elif event_type == "error":
+                    print(f"Error streaming courtroom thread {thread_id}: {event['message']}\n{event['trace']}")
+                    yield f"event: error\ndata: {json.dumps({'message': event['message'], 'trace': event['trace']})}\n\n"
+                    break
+        finally:
+            # Clean up task and queue when connection closes
+            active_queues.pop(thread_id, None)
+            task.cancel()
 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
