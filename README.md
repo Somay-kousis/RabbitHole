@@ -409,29 +409,71 @@ Graph successfully completed execution up to the HITL interrupt.
 
 ## Installation & Developer Quickstart
 
-### 1. Clone & Setup Virtual Environment
+RabbitHole can be executed either as a unified multi-container system using **Docker Compose** (recommended for production parity) or as separate local services.
+
+### 1. Set Up Credentials
+Create a `.env` file in the `backend/` directory:
+```env
+# API Keys (Must have Groq or Gemini API keys configured)
+GROQ_API_KEY=your_groq_api_key
+GOOGLE_API_KEY=your_google_api_key
+JINA_API_KEY=your_jina_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+---
+
+### Option A: Unified Container Execution (Easiest)
+Deploy both the React frontend (exposed via an unbuffered Nginx reverse proxy) and the FastAPI backend side-by-side with a single command:
+
 ```bash
-git clone https://github.com/yourusername/RabbitHole.git
-cd RabbitHole
+# From the project root directory
+docker-compose up --build
+```
+* Once built, open **`http://localhost/`** in your browser to interact with the Gazette virtual courtroom dashboard.
+
+---
+
+### Option B: Local Services (For Development)
+
+#### 1. Backend API Server Setup
+```bash
+# Navigate to backend directory
+cd backend
+
+# Setup virtual environment
 python3 -m venv venv
 source venv/bin/activate
-```
 
-### 2. Install Dependencies
-```bash
+# Install backend dependencies
 pip install -r requirements.txt
-```
 
-### 3. Set Up Credentials
-Create a `.env` file in the project root:
-```env
-GROQ_API_KEY=your_groq_api_key
-PINECONE_API_KEY=your_pinecone_api_key
-JINA_API_KEY=your_jina_api_key
+# Run the FastAPI server
+PYTHONPATH=. python app/main.py
 ```
+* The backend API server will run at **`http://localhost:8000`**.
 
-### 4. Execute the Simulation
-Run the simulation test loop:
+#### 2. Frontend Client Setup
+In a new terminal window, initialize the Vite server:
 ```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install package dependencies
+npm install
+
+# Run the Vite development server
+npm run dev
+```
+* Open **`http://localhost:5173`** in your browser. The frontend dev server automatically detects Vercel environment configurations and local dev ports to connect to the backend.
+
+---
+
+### CLI Simulation Test Loop
+If you prefer running a direct terminal CLI trace execution of the courtroom graph without spinning up the web interface:
+```bash
+cd backend
+source venv/bin/activate
 python scripts/run_graph.py
 ```
