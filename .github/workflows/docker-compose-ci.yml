@@ -1,0 +1,34 @@
+name: Docker Compose CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docker-compose.yml'
+      - '**/Dockerfile'
+      - '.github/workflows/docker-compose-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docker-compose.yml'
+      - '**/Dockerfile'
+      - '.github/workflows/docker-compose-ci.yml'
+
+jobs:
+  validate-compose:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: actions/setup-buildx-action@v3
+
+    - name: Verify Compose Config Syntax
+      run: |
+        docker compose config
+
+    - name: Test Build Compose Services
+      run: |
+        docker compose build
