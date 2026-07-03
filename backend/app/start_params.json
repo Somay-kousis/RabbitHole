@@ -49,5 +49,71 @@
       "judiciary_type": "neutral",
       "specific_roles": []
     }
+  },
+  "cd04098f-d2d6-4b4e-a970-8499b65dc98f": {
+    "user_input": "demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
+  },
+  "82e9b67c-f8d8-40e3-922d-4376f28875c8": {
+    "user_input": "demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
+  },
+  "903205dc-7265-43f4-a4f9-c5c462201ee2": {
+    "user_input": "demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 4,
+    "user_commands": {
+      "number_of_perspectives": 4,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
+  },
+  "bec25b1e-2911-40a7-bd34-d22bdd65e703": {
+    "user_input": " demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
+  },
+  "6c234dc5-23fc-4dc0-8466-4b12c6bc1a21": {
+    "user_input": "demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
+  },
+  "8692dfee-7627-4abf-8379-149b0d68a221": {
+    "user_input": "demolition of houses on government land with 3 days notice",
+    "turn_count": 0,
+    "judiciary_corrupt": false,
+    "number_of_perspectives": 2,
+    "user_commands": {
+      "number_of_perspectives": 2,
+      "judiciary_type": "neutral",
+      "specific_roles": []
+    }
   }
 }

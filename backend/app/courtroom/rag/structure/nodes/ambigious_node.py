@@ -58,6 +58,10 @@ def ambigious_node(state: RagState):
     local_state["is_sup"] = False
     
     docs_text = "\n\n---\n\n".join([doc.page_content for doc in filtered_local]) if filtered_local else ""
+    # Cap context to prevent token explosion in audit loop
+    MAX_CONTEXT_CHARS = 15000
+    if len(docs_text) > MAX_CONTEXT_CHARS:
+        docs_text = docs_text[:MAX_CONTEXT_CHARS] + "\n\n[... truncated for token limit ...]"
     local_brief_docs = []
     
     while local_state["turn"] < 5:

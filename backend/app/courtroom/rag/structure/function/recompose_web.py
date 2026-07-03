@@ -43,6 +43,11 @@ def recompose_web(search_results: list[dict], state: RagState) -> list:
         
     documents_text = "\n\n=========================================\n\n".join(doc_blocks)
     
+    # Cap context to prevent token explosion
+    MAX_CONTEXT_CHARS = 15000
+    if len(documents_text) > MAX_CONTEXT_CHARS:
+        documents_text = documents_text[:MAX_CONTEXT_CHARS] + "\n\n[... truncated for token limit ...]"
+    
     summary = recompose_web_chain.invoke({
         "request": state["request"],
         "documents": documents_text

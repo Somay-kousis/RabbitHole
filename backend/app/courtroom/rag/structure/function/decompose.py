@@ -44,4 +44,9 @@ def decompose(state: RagState) -> list:
                 query = futures[future]
                 print(f"Error searching documents for query '{query}': {e}")
     
+    # Cap the pool to prevent downstream token explosion
+    MAX_DOCS = 20
+    if len(all_docs) > MAX_DOCS:
+        all_docs = all_docs[:MAX_DOCS]
+
     return all_docs
