@@ -28,8 +28,11 @@ def recompose(filtered_docs: list, state: RagState) -> list:
     if not filtered_docs:
         return []
     
-    # Concatenate all filtered doc texts
+    # Concatenate all filtered doc texts, capped at 15K chars (~4K tokens)
     docs_text = "\n\n---\n\n".join([doc.page_content for doc in filtered_docs])
+    MAX_CONTEXT_CHARS = 15000
+    if len(docs_text) > MAX_CONTEXT_CHARS:
+        docs_text = docs_text[:MAX_CONTEXT_CHARS] + "\n\n[... truncated for token limit ...]"
     
     # Check if this is a rewrite loop
     turn = state.get("turn", 0)

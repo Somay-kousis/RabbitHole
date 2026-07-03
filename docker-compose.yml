@@ -1,18 +1,24 @@
 services:
   backend:
+    container_name: rabbithole-backend
     build: ./backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/workspace
+      - /workspace/venv
     env_file:
       - ./backend/.env
     environment:
       - ENV_VAR_EXAMPLE=value
 
   frontend:
+    container_name: rabbithole-frontend
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
       - backend
+
