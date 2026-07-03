@@ -16,6 +16,10 @@ By orchestrating parallel adversarial perspectives within a virtual courtroom ar
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
 </p>
 
+<p align="center">
+  <img src="assets/interface.jpeg" alt="RabbitHole Courtroom Interface" width="100%" />
+</p>
+
 ---
 
 ## Core Philosophy
