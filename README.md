@@ -1,12 +1,13 @@
 <h1 style="border-bottom: none; margin-top: 0; padding-top: 0;">RabbitHole</h1>
 
-<img src="assets/rabbit.png" align="left" width="200" style="margin-right: 20px; float: left;" alt="RabbitHole Logo" />
+<p align="center">
+  <img src="assets/logo.png" width="160" alt="RabbitHole Logo" />
+</p>
 
 **RabbitHole** is a stateful multi-agent orchestration engine built on LangGraph. It is engineered to structure, simulate, and resolve complex legal, philosophical, or systemic disputes that resist singular, consensus-driven answers.
 
 By orchestrating parallel adversarial perspectives within a virtual courtroom architecture, RabbitHole exposes underlying contradictions, evidential gaps, and epistemic boundaries. Rather than flattening complexity into a unified average answer, the engine choreographs divergent agent personas (state advocates, privacy activists, compliance officers) to cross-examine and critique claims based on retrieved context.
 
-<br clear="left" />
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python Version" />
