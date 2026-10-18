@@ -4,18 +4,19 @@
   <img src="assets/logo.png" width="160" alt="RabbitHole Logo" />
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB.svg" alt="Python" />
+  <img src="https://img.shields.io/badge/LangGraph-Stateful%20Agents-orange.svg" alt="LangGraph" />
+  <img src="https://img.shields.io/badge/VectorDB-Pinecone%20%2B%20BM25-blueviolet.svg" alt="Pinecone & BM25" />
+  <img src="https://img.shields.io/badge/Groq-Rate%20Limit%20Optimized-yellowgreen.svg" alt="Groq Optimized" />
+  <img src="https://img.shields.io/badge/FastAPI-backend-009688.svg" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-frontend-61DAFB.svg" alt="React" />
+</p>
+
 **RabbitHole** is a stateful multi-agent orchestration engine built on LangGraph. It is engineered to structure, simulate, and resolve complex legal, philosophical, or systemic disputes that resist singular, consensus-driven answers.
 
 By orchestrating parallel adversarial perspectives within a virtual courtroom architecture, RabbitHole exposes underlying contradictions, evidential gaps, and epistemic boundaries. Rather than flattening complexity into a unified average answer, the engine choreographs divergent agent personas (state advocates, privacy activists, compliance officers) to cross-examine and critique claims based on retrieved context.
 
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python Version" />
-  <img src="https://img.shields.io/badge/LangGraph-Stateful%20Agents-orange.svg" alt="LangGraph" />
-  <img src="https://img.shields.io/badge/VectorDB-Pinecone%20%2B%20BM25-blueviolet.svg" alt="Pinecone & BM25" />
-  <img src="https://img.shields.io/badge/Groq-Rate%20Limit%20Optimized-yellowgreen.svg" alt="Groq Optimized" />
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
-</p>
 
 <p align="center">
   <img src="assets/interface.jpeg" alt="RabbitHole Courtroom Interface" width="100%" />
@@ -49,17 +50,6 @@ RabbitHole is designed as a hierarchical multi-agent framework consisting of two
 The Courtroom Graph acts as the high-level debate orchestrator. It manages session state, schedules opposing arguments in parallel, runs judicial reviews, and interrupts for human decisions.
 
 ```mermaid
-%%{init: {
-  'theme': 'dark',
-  'themeVariables': {
-    'background': '#0b0f19',
-    'primaryColor': '#1e293b',
-    'primaryTextColor': '#f8fafc',
-    'lineColor': '#38bdf8',
-    'nodeBorder': '#334155',
-    'tertiaryColor': '#0f172a'
-  }
-}}%%
 flowchart TD
     C_Start([Start])
     QueryRefine["query_refine_node<br/>(Refines case objective)"]
@@ -96,16 +86,6 @@ flowchart TD
     HITL -->|Add User Input| QueryRefine
     HITL -->|Generate Conclusion| Conclusion
     Conclusion --> C_End
-
-    style Debate fill:#0d1117,stroke:#4f46e5,stroke-dasharray: 5 5,stroke-width:1.5px,color:#f8fafc;
-
-    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
-    classDef outerNode fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
-    classDef decision fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
-
-    class C_Start,C_End startEnd;
-    class QueryRefine,RAGNode,Moderator,P1,P2,Pn,Judiciary,Conclusion outerNode;
-    class HITL decision;
 ```
 
 #### Courtroom Performance & Optimization Metrics
@@ -126,17 +106,6 @@ The RAG Sub-graph is a robust, self-correcting retrieval pipeline that combines:
 *   **Self-RAG (SRAG):** Iterative verification and hallucination auditing loops.
 
 ```mermaid
-%%{init: {
-  'theme': 'dark',
-  'themeVariables': {
-    'background': '#0b0f19',
-    'primaryColor': '#1e293b',
-    'primaryTextColor': '#f8fafc',
-    'lineColor': '#a78bfa',
-    'nodeBorder': '#334155',
-    'tertiaryColor': '#0f172a'
-  }
-}}%%
 flowchart TD
     R_Start([RAG Start])
     Clerk["level_one_refine_node<br/>(Clerk matching files)"]
@@ -187,16 +156,6 @@ flowchart TD
     WebRAG --> R_End
     HybridRAG --> R_End
     HybridRAG -- "Internal verification loop (up to 5x)" --> HybridRAG
-
-    style Retrieval fill:#0d1117,stroke:#8b5cf6,stroke-dasharray: 5 5,stroke-width:1.5px,color:#f8fafc;
-
-    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
-    classDef innerNode fill:#241442,stroke:#8b5cf6,stroke-width:1.5px,color:#ddd6fe;
-    classDef decision fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
-
-    class R_Start,R_End startEnd;
-    class Clerk,Search,Reranker,Grader,LocalRAG,WebRAG,HybridRAG,Auditor,NotSupported innerNode;
-    class RetrieveCheck,QualityCheck,AuditCheck decision;
 ```
 
 ---
@@ -215,17 +174,6 @@ flowchart TD
 This diagram illustrates the interface boundaries. The outer graph's `rag_node` delegates state variables to the RAG Sub-graph and consumes the resulting final brief context safely.
 
 ```mermaid
-%%{init: {
-  'theme': 'dark',
-  'themeVariables': {
-    'background': '#0b0f19',
-    'primaryColor': '#1e293b',
-    'primaryTextColor': '#f8fafc',
-    'lineColor': '#38bdf8',
-    'nodeBorder': '#334155',
-    'tertiaryColor': '#0f172a'
-  }
-}}%%
 flowchart LR
     subgraph Courtroom ["Outer Courtroom Graph"]
         QRefine[query_refine_node]
@@ -241,17 +189,6 @@ flowchart LR
     
     RAGNode ===>|1. Invokes with State| RStart
     REnd ===>|2. Returns final_docs| RAGNode
-
-    style Courtroom fill:#0d1117,stroke:#4f46e5,stroke-width:1.5px,color:#f8fafc;
-    style RAGSub fill:#0d1117,stroke:#8b5cf6,stroke-width:1.5px,color:#f8fafc;
-
-    classDef outerNode fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
-    classDef innerNode fill:#241442,stroke:#8b5cf6,stroke-width:1.5px,color:#ddd6fe;
-    classDef startEnd fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
-
-    class QRefine,RAGNode,Moderator outerNode;
-    class RStart,REnd startEnd;
-    class RAG_Pipeline innerNode;
 ```
 
 #### RAG Performance Metrics
@@ -278,17 +215,6 @@ Rather than hardcoding a single LLM provider, RabbitHole dynamically inspects co
 To guarantee execution continuity during high-concurrency debate steps, the engine wraps model chains in a recursive `FallbackChatModel`. If a provider returns a rate limit (HTTP 429) or connection error, the model wrapper catches the failure and seamlessly routes the call to the next available provider (e.g., failing over from Cerebras to Groq, then to Gemini) without interrupting the graph state.
 
 ```mermaid
-%%{init: {
-  'theme': 'dark',
-  'themeVariables': {
-    'background': '#0b0f19',
-    'primaryColor': '#1e293b',
-    'primaryTextColor': '#f8fafc',
-    'lineColor': '#10b981',
-    'nodeBorder': '#334155',
-    'tertiaryColor': '#0f172a'
-  }
-}}%%
 flowchart TD
     APIKeys["Check .env API Keys<br/>(Cerebras, Groq, Gemini, OpenRouter, HF)"]
     Resolve["Auto-Resolve Provider Lists<br/>(Primary, Secondary, Tertiary fallback tiers)"]
@@ -318,18 +244,6 @@ flowchart TD
     
     TryTertiary -->|Yes| SuccessNode
     TryTertiary -->|No / Exhausted| FailNode
-
-    style FailoverLoop fill:#0d1117,stroke:#059669,stroke-width:1.5px,color:#f8fafc;
-
-    classDef step fill:#161b33,stroke:#4f46e5,stroke-width:1.5px,color:#c7d2fe;
-    classDef check fill:#3c200c,stroke:#f59e0b,stroke-width:1.5px,color:#fde047;
-    classDef error fill:#4c0519,stroke:#ef4444,stroke-width:1.5px,color:#fca5a5;
-    classDef success fill:#0f2c22,stroke:#10b981,stroke-width:1.5px,color:#34d399;
-
-    class APIKeys,Resolve,Request,TryPrimary,TrySecondary,TryTertiary step;
-    class CheckSuccess,CheckSuccess2 check;
-    class FailNode error;
-    class SuccessNode success;
 ```
 
 ### 3. Cost-Aware Model Splitting
